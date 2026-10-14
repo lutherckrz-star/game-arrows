@@ -409,68 +409,6 @@ async init() {
             case 'flask':
                 ctx.beginPath();
                 ctx.moveTo(8, 6);
-createLogoFallback(text) {
-        const canvas = document.createElement('canvas');
-        canvas.width = 512;
-        canvas.height = 512;
-        const ctx = canvas.getContext('2d');
-        
-        const gradient = ctx.createLinearGradient(0, 0, 512, 512);
-        gradient.addColorStop(0, '#1a1a2e');
-        gradient.addColorStop(1, '#16213e');
-        ctx.fillStyle = gradient;
-        ctx.fillRect(0, 0, 512, 512);
-        
-        const glow = ctx.createRadialGradient(256, 256, 0, 256, 256, 200);
-        glow.addColorStop(0, 'rgba(255, 71, 87, 0.3)');
-        glow.addColorStop(1, 'rgba(0, 0, 0, 0)');
-        ctx.fillStyle = glow;
-        ctx.fillRect(0, 0, 512, 512);
-        
-        ctx.font = \old \px system-ui\;
-        ctx.fillStyle = '#ff4757';
-        ctx.textAlign = 'center';
-        ctx.textBaseline = 'middle';
-        ctx.fillText('Arrow Escape', 256, 240);
-        
-        ctx.font = \old \px system-ui\;
-        ctx.fillStyle = '#feca57';
-        ctx.fillText('Elemental', 256, 290);
-        
-        return canvas;
-    }
-
-    createCoverFallback(width, height) {
-        const canvas = document.createElement('canvas');
-        canvas.width = width;
-        canvas.height = height;
-        const ctx = canvas.getContext('2d');
-        
-        const gradient = ctx.createLinearGradient(0, 0, width, height);
-        gradient.addColorStop(0, '#1a1a2e');
-        gradient.addColorStop(1, '#16213e');
-        ctx.fillStyle = gradient;
-        ctx.fillRect(0, 0, width, height);
-        
-        const glow = ctx.createRadialGradient(width/2, height/2, 0, width/2, height/2, Math.max(width, height)/2);
-        glow.addColorStop(0, 'rgba(255, 71, 87, 0.2)');
-        glow.addColorStop(0.5, 'rgba(52, 152, 219, 0.1)');
-        glow.addColorStop(1, 'rgba(0, 0, 0, 0)');
-        ctx.fillStyle = glow;
-        ctx.fillRect(0, 0, width, height);
-        
-        ctx.font = \old \px system-ui\;
-        ctx.fillStyle = '#ff4757';
-        ctx.textAlign = 'center';
-        ctx.textBaseline = 'middle';
-        ctx.fillText('Arrow Escape', width/2, height/2 - 30);
-        
-        ctx.font = \old \px system-ui\;
-        ctx.fillStyle = '#feca57';
-        ctx.fillText('Elemental', width/2, height/2 + 30);
-        
-        return canvas;
-    }
                 ctx.lineTo(8, 18);
                 ctx.lineTo(16, 18);
                 ctx.lineTo(16, 6);
@@ -521,6 +459,69 @@ createLogoFallback(text) {
         return canvas;
     }
 
+    createLogoFallback(text) {
+        const canvas = document.createElement('canvas');
+        canvas.width = 512;
+        canvas.height = 512;
+        const ctx = canvas.getContext('2d');
+        
+        const gradient = ctx.createLinearGradient(0, 0, 512, 512);
+        gradient.addColorStop(0, '#1a1a2e');
+        gradient.addColorStop(1, '#16213e');
+        ctx.fillStyle = gradient;
+        ctx.fillRect(0, 0, 512, 512);
+        
+        const glow = ctx.createRadialGradient(256, 256, 0, 256, 256, 200);
+        glow.addColorStop(0, 'rgba(255, 71, 87, 0.3)');
+        glow.addColorStop(1, 'rgba(0, 0, 0, 0)');
+        ctx.fillStyle = glow;
+        ctx.fillRect(0, 0, 512, 512);
+        
+        ctx.font = 'bold 64px system-ui';
+        ctx.fillStyle = '#ff4757';
+        ctx.textAlign = 'center';
+        ctx.textBaseline = 'middle';
+        ctx.fillText(text || 'Arrow Escape', 256, 240);
+        
+        ctx.font = '24px system-ui';
+        ctx.fillStyle = '#feca57';
+        ctx.fillText('Elemental', 256, 290);
+        
+        return canvas;
+    }
+
+    createCoverFallback(width, height) {
+        const canvas = document.createElement('canvas');
+        canvas.width = width;
+        canvas.height = height;
+        const ctx = canvas.getContext('2d');
+        
+        const gradient = ctx.createLinearGradient(0, 0, width, height);
+        gradient.addColorStop(0, '#1a1a2e');
+        gradient.addColorStop(1, '#16213e');
+        ctx.fillStyle = gradient;
+        ctx.fillRect(0, 0, width, height);
+        
+        const glow = ctx.createRadialGradient(width/2, height/2, 0, width/2, height/2, Math.max(width, height)/2);
+        glow.addColorStop(0, 'rgba(255, 71, 87, 0.2)');
+        glow.addColorStop(0.5, 'rgba(52, 152, 219, 0.1)');
+        glow.addColorStop(1, 'rgba(0, 0, 0, 0)');
+        ctx.fillStyle = glow;
+        ctx.fillRect(0, 0, width, height);
+        
+        ctx.font = `bold ${Math.min(width, height) / 10}px system-ui`;
+        ctx.fillStyle = '#ff4757';
+        ctx.textAlign = 'center';
+        ctx.textBaseline = 'middle';
+        ctx.fillText('Arrow Escape', width/2, height/2 - 30);
+        
+        ctx.font = `${Math.min(width, height) / 20}px system-ui`;
+        ctx.fillStyle = '#feca57';
+        ctx.fillText('Elemental', width/2, height/2 + 30);
+        
+        return canvas;
+    }
+
     createPWAIconFallback(size) {
         const canvas = document.createElement('canvas');
         canvas.width = size;
@@ -540,9 +541,10 @@ createLogoFallback(text) {
         ctx.stroke();
         
         ctx.font = `bold ${size/4}px system-ui`;
+        ctx.fillStyle = '#ff4757';
         ctx.textAlign = 'center';
         ctx.textBaseline = 'middle';
-        ctx.fillText('→', size/2, size/2 + size/16);
+        ctx.fillText('\u2192', size/2, size/2 + size/16);
         
         return canvas;
     }
