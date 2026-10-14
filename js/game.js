@@ -250,6 +250,10 @@ async init() {
             }
         }
     }
+
+    resizeCanvas() {
+        const container = this.canvas.parentElement;
+        const rect = container.getBoundingClientRect();
         const maxWidth = Math.min(rect.width, 500);
         const maxHeight = rect.height * 0.7;
         
@@ -258,6 +262,7 @@ async init() {
         
         this.canvas.width = maxWidth * this.dpr;
         this.canvas.height = maxHeight * this.dpr;
+        this.ctx.setTransform(1, 0, 0, 1, 0, 0);
         this.ctx.scale(this.dpr, this.dpr);
         
         const boardSize = Math.min(maxWidth, maxHeight * 0.9);
@@ -265,7 +270,8 @@ async init() {
         this.boardOffsetX = (maxWidth - boardSize) / 2;
         this.boardOffsetY = (maxHeight - boardSize) / 2 + 20;
     }
-setupInput() {
+
+    setupInput() {
         this.canvas.addEventListener('click', (e) => this.handleClick(e));
         this.canvas.addEventListener('mousemove', (e) => this.handleMouseMove(e));
         this.canvas.addEventListener('touchstart', (e) => this.handleTouchStart(e), { passive: false });
