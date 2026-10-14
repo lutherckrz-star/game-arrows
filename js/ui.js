@@ -33,6 +33,7 @@ export class UIManager {
 
     showToast(message, duration = CONFIG.TOAST_DURATION) {
         const container = document.getElementById('toasts-container');
+        if (!container) return;
         const toast = document.createElement('div');
         toast.className = 'toast';
         toast.textContent = message;
@@ -126,7 +127,7 @@ showLevelComplete(data) {
     showBossTimer(remaining) { const bossTimer = document.getElementById('boss-timer'); if (bossTimer) { bossTimer.textContent = `Boss: ${this.formatTime(remaining)}`; bossTimer.classList.remove('hidden'); } }
     hideBossTimer() { document.getElementById('boss-timer')?.classList.add('hidden'); }
 
-    formatTime(ms) { const totalSec = Math.floor(ms / 1000); const min = Math.floor(totalSec / 60); const sec = totalSec % 60; return `${min.toString().padStart(2, '0')}:${sec.toString().padStart(2, '0')}`; }
+    formatTime(ms) { if (!Number.isFinite(ms) || ms < 0) ms = 0; const totalSec = Math.floor(ms / 1000); const min = Math.floor(totalSec / 60); const sec = totalSec % 60; return `${min.toString().padStart(2, '0')}:${sec.toString().padStart(2, '0')}`; }
 
     showReaction(reactionName) { const lang = i18n.getLang(); const names = { STEAM: { en: 'STEAM!', id: 'UAP!' }, CONDUCTOR: { en: 'CONDUCTOR!', id: 'KONDUKTOR!' }, DEEP_FREEZE: { en: 'DEEP FREEZE!', id: 'BEKU TOTAL!' }, EXPLOSION: { en: 'EXPLOSION!', id: 'LEDAKAN!' } }; this.showToast(names[reactionName]?.[lang] || reactionName, 2000); }
 
@@ -138,7 +139,11 @@ showLevelComplete(data) {
         this.hideAllModals();
         const mainMenu = document.getElementById('main-menu');
         if (mainMenu) mainMenu.classList.remove('hidden');
-        this.updateHUD({ level: 1, score: 0, crystals: 0, time: 0 });
+        // Sinkronkan tombol Continue & bahasa UI
+        if (window.menuManager?.updateContinueButton) window.menuManager.updateContinueButton();
+        i18n.applyLanguage();
+        const crystals = window.crystalManager ? window.crystalManager.crystals : 0;
+        this.updateHUD({ level: 1, score: 0, crystals, time: 0 });
         document.getElementById('game-header')?.classList.add('hidden');
         document.getElementById('game-footer')?.classList.add('hidden');
     }

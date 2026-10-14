@@ -72,17 +72,40 @@ bindEvents() {
 
     startGame() { const save = JSON.parse(localStorage.getItem(CONFIG.SAVE_KEY) || '{}'); this.startLevel(save.currentLevel || 1); }
     startLevel(levelNum) { this.hideAllModals(); if (window.game) window.game.startLevel(levelNum); this.currentMenu = 'game'; }
-    startMode(mode) { const save = JSON.parse(localStorage.getItem(CONFIG.SAVE_KEY) || '{}'); const currentLevel = save.currentLevel || 1; if (mode === 'endless' && currentLevel < CONFIG.ENDLESS_UNLOCK_LEVEL) return; if (mode === 'daily' && currentLevel < CONFIG.DAILY_UNLOCK_LEVEL) return; if (mode === 'boss_rush' && currentLevel < CONFIG.BOSS_RUSH_UNLOCK_LEVEL) return; this.hideAllModals(); if (window.game) window.game.startMode(mode); }
+    startMode(mode) {
+        const save = JSON.parse(localStorage.getItem(CONFIG.SAVE_KEY) || '{}');
+        const currentLevel = save.currentLevel || 1;
+        const unlockMap = { endless: CONFIG.ENDLESS_UNLOCK_LEVEL, daily: CONFIG.DAILY_UNLOCK_LEVEL, boss_rush: CONFIG.BOSS_RUSH_UNLOCK_LEVEL };
+        const need = unlockMap[mode];
+        if (need !== undefined && currentLevel < need) {
+            if (window.ui) window.ui.showToast(`${t('locked')} — ${t('level')} ${need}`);
+            return;
+        }
+        this.hideAllModals();
+        if (window.game) window.game.startMode(mode);
+    }
 
     showElementLab() { this.hideAllModals(); if (window.ui) window.ui.showElementLab(); }
     showAchievements() { this.hideAllModals(); if (window.ui) window.ui.showAchievements(); }
     showSettings() { this.hideAllModals(); if (window.ui) window.ui.showSettings(); }
 
-    togglePause() { if (this.currentMenu === 'game' && window.game && !window.game.isPaused) { window.game.pause(); this.showPauseMenu(); } else if (this.currentMenu === 'pause') { this.resumeGame(); } }
+    togglePause() {
+        const state = window.game?.state;
+        if (state === 'playing') { window.game.pause(); this.showPauseMenu(); }
+        else if (state === 'paused') { this.resumeGame(); }
+    }
     resumeGame() { this.hideAllModals(); if (window.game) window.game.resume(); this.currentMenu = 'game'; }
     restartLevel() { this.hideAllModals(); if (window.game) window.game.restartLevel(); this.currentMenu = 'game'; }
     
-    nextLevel() { this.hideAllModals(); if (window.game && window.game.currentLevel < CONFIG.CAMPAIGN_LEVELS) window.game.startLevel(window.game.currentLevel + 1); this.currentMenu = 'game'; }
+    nextLevel() {
+        this.hideAllModals();
+        if (window.game && window.game.currentLevel < CONFIG.CAMPAIGN_LEVELS) {
+            window.game.startLevel(window.game.currentLevel + 1);
+            this.currentMenu = 'game';
+        } else {
+            this.backToMenu();
+        }
+    }
     backToMenu() { this.hideAllModals(); if (window.game) window.game.quitToMenu(); this.showMainMenu(); }
     undoMove() { if (window.game) window.game.undo(); }
     

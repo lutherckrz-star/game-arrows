@@ -97,7 +97,7 @@ function generateBoardReverseSolve(config) {
     if (placed < arrowCount) {
         for (const pos of positions) {
             if (placed >= arrowCount) break;
-            if (board.isEmpty(pos.row, pos.col)) {
+            if (board.isCellEmpty(pos.row, pos.col)) {
                 const validDirections = getValidDirections(board, pos.row, pos.col);
                 if (validDirections.length > 0) {
                     const direction = validDirections[Math.floor(Math.random() * validDirections.length)];

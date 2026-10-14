@@ -58,6 +58,7 @@ export const CONFIG = {
     BOSS_GRID_SIZE: 6,
 
     // Game Feel
+    ARROW_EXIT_SPEED: 3,
     HIT_STOP_DURATION: 50,
     TRAUMA_DECAY: 0.02,
     MAX_SHAKE: 10,
@@ -183,8 +184,9 @@ export const CONFIG = {
     DEVTOOLS_THRESHOLD: 160
 };
 
-// Helper: cek debug mode dari URL
-if (new URLSearchParams(window.location.search).has('debug')) {
+// Helper: cek debug mode dari URL (aman untuk environment non-browser / unit test)
+if (typeof window !== 'undefined' && window.location &&
+    new URLSearchParams(window.location.search).has('debug')) {
     CONFIG.DEBUG = true;
     CONFIG.DEBUG_FPS = true;
     CONFIG.DEBUG_GRID = true;
