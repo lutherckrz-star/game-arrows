@@ -56,7 +56,7 @@ export class SettingsManager {
             case 'music': if (window.audioManager) window.audioManager.setMusicEnabled(value); break;
             case 'colorblind': document.body.classList.toggle('colorblind', value); break;
             case 'reducedMotion': document.body.classList.toggle('reduced-motion', value); break;
-            case 'language': i18n.setLang(value); break;
+            case 'language': if (i18n.getLang() !== value) i18n.setLang(value); { const sel = document.getElementById('setting-language'); if (sel) sel.value = value; } break;
             case 'anonymousMode': this.applyAnonymousMode(value); break;
         }
         const toggle = document.getElementById(`setting-${key}`);

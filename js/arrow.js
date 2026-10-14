@@ -3,11 +3,23 @@
  * Arrow Class - Representasi panah di papan
  */
 
+import { CONFIG } from './config.js';
+
+// Normalisasi arah: terima string ('UP') maupun konstanta DIRECTIONS → selalu string.
+// Didefinisikan di sini (bukan modul lain) agar tidak ada circular import.
+const DIR_NAMES = { UP: 'UP', DOWN: 'DOWN', LEFT: 'LEFT', RIGHT: 'RIGHT' };
+export function normalizeDirection(d) {
+    if (typeof d === 'string') return DIR_NAMES[d] || null;
+    if (d && typeof d.name === 'string') return DIR_NAMES[d.name] || null;
+    return null;
+}
+
 export class Arrow {
     constructor(row, col, direction, element = 'PLAIN') {
         this.row = row;
         this.col = col;
-        this.direction = direction; // 'UP', 'DOWN', 'LEFT', 'RIGHT'
+        // Simpan selalu sebagai string ('UP','DOWN','LEFT','RIGHT') — toleran terhadap objek DIRECTIONS
+        this.direction = normalizeDirection(direction) || direction;
         this.element = element; // 'FIRE', 'WATER', 'ICE', 'ELECTRIC', 'PLAIN'
         this.id = Arrow.generateId();
         this.isExiting = false;
@@ -24,14 +36,16 @@ export class Arrow {
         return 'arrow_' + Math.random().toString(36).substr(2, 9) + Date.now().toString(36);
     }
 
-    // Cek apakah panah bisa keluar (jalur bersih)
+    // Cek apakah panah bisa keluar (jalur bersih).
+    // Arah disimpan baik sebagai string ('UP') maupun konstanta DIRECTIONS — normalisasi di sini.
     canExit(board) {
         if (this.isFrozen) return false;
+        const dir = typeof this.direction === 'string' ? this.direction : (this.direction && this.direction.name) || String(this.direction);
         const { grid, size } = board;
         let r = this.row;
         let c = this.col;
 
-        switch (this.direction) {
+        switch (dir) {
             case 'UP':
                 for (let i = r - 1; i >= 0; i--) {
                     if (grid[i][c]) return false;
@@ -56,14 +70,17 @@ export class Arrow {
         return false;
     }
 
-    // Dapatkan daftar panah yang menghalangi
+    // Dapatkan daftar panah yang menghalangi.
+    // Konvensi: penghalang adalah panah lain yang berdiri di jalur keluar
+    // (sel antara panah dan tepi papan). Panah itu sendiri tidak dihitung.
     getBlockers(board) {
         const blockers = [];
+        const dir = typeof this.direction === 'string' ? this.direction : (this.direction && this.direction.name) || String(this.direction);
         const { grid, size } = board;
         let r = this.row;
         let c = this.col;
 
-        switch (this.direction) {
+        switch (dir) {
             case 'UP':
                 for (let i = r - 1; i >= 0; i--) {
                     if (grid[i][c]) blockers.push(grid[i][c]);
@@ -88,13 +105,18 @@ export class Arrow {
         return blockers;
     }
 
-    // Update animasi keluar
+    // Update animasi keluar. Return true pada frame saat panah selesai keluar
+    // (pemanggil wajib mengecek return value ini — filter berbasis exitProgress saja tidak akurat).
+    // Catatan: isExiting TETAP true setelah progress penuh, sebagai penanda
+    // bahwa panah sudah meninggalkan papan (dipakai getActiveArrows & renderer).
     updateExit(dt) {
-        this.exitProgress += dt * 3; // kecepatan keluar
+        if (!this.isExiting) return false;
+        this.exitProgress += dt * (CONFIG.ARROW_EXIT_SPEED || 3); // kecepatan keluar
         if (this.exitProgress >= 1) {
             this.exitProgress = 1;
-            this.isExiting = false;
+            return true;
         }
+        return false;
     }
 
     // Update freeze timer
@@ -174,10 +196,10 @@ export class Arrow {
 
 // Direction vectors
 export const DIRECTIONS = {
-    UP: { dr: -1, dc: 0, angle: -Math.PI / 2 },
-    DOWN: { dr: 1, dc: 0, angle: Math.PI / 2 },
-    LEFT: { dr: 0, dc: -1, angle: Math.PI },
-    RIGHT: { dr: 0, dc: 1, angle: 0 }
+    UP: { name: 'UP', dr: -1, dc: 0, angle: -Math.PI / 2 },
+    DOWN: { name: 'DOWN', dr: 1, dc: 0, angle: Math.PI / 2 },
+    LEFT: { name: 'LEFT', dr: 0, dc: -1, angle: Math.PI },
+    RIGHT: { name: 'RIGHT', dr: 0, dc: 1, angle: 0 }
 };
 
 export const DIRECTION_ORDER = ['UP', 'RIGHT', 'DOWN', 'LEFT'];

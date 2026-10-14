@@ -18,12 +18,16 @@ import { securityManager } from './security.js';
 import { particleSystem } from './particles.js';
 import { ui } from './ui.js';
 import { settingsManager } from './settings.js';
-import { i18n } from './i18n.js';
+import { menuManager } from './menu.js';
+import { i18n, t } from './i18n.js';
 
-// Global refs
+// Global refs (fallback untuk modul yang mengakses via window)
 window.game = null;
 window.getElementLevel = getElementLevel;
 window.upgradeElement = upgradeElement;
+if (!window.elementModule) {
+    window.elementModule = { upgradeElement, getElementLevel };
+}
 
 export class Game {
     constructor() {
@@ -97,7 +101,12 @@ async init() {
         securityManager.init();
         adsManager.init();
         ui.init();
+        menuManager.init();
         particleSystem.init(this.canvas);
+
+        // Sinkronkan select bahasa dengan bahasa aktif hasil deteksi i18n
+        const langSelectInit = document.getElementById('setting-language');
+        if (langSelectInit) langSelectInit.value = i18n.getLang();
         
         this.loadGame();
         this.setupCanvas();
@@ -107,14 +116,12 @@ async init() {
         this.lastTime = performance.now();
         this.state = 'menu';
         ui.showMainMenu();
-        ui.updateHUD(this.getHUDData());
         ui.hideLoading();
         
         // Safe check for first session
         const save = this.saveData;
         if (!save || !save.firstSessionComplete) {
             this.isFirstSession = true;
-            this.startLevel(1);
         } else if (this.checkAutoResume()) {
             // Show main menu first, then prompt auto-resume
             setTimeout(() => this.promptAutoResume(), 500);
@@ -137,17 +144,17 @@ async init() {
         const container = this.canvas.parentElement;
         const rect = container.getBoundingClientRect();
         const maxWidth = Math.min(rect.width, 500);
-        const maxHeight = rect.height * 0.7;
+        const maxHeight = Math.max(rect.height * 0.7, 240);
         
         this.canvas.style.width = maxWidth + 'px';
         this.canvas.style.height = maxHeight + 'px';
         
-        this.canvas.width = maxWidth * this.dpr;
-        this.canvas.height = maxHeight * this.dpr;
+        this.canvas.width = Math.round(maxWidth * this.dpr);
+        this.canvas.height = Math.round(maxHeight * this.dpr);
         this.ctx.setTransform(1, 0, 0, 1, 0, 0);
         this.ctx.scale(this.dpr, this.dpr);
         
-        const boardSize = Math.min(maxWidth, maxHeight * 0.9);
+        const boardSize = Math.min(maxWidth * 0.92, maxHeight * 0.8);
         this.cellSize = boardSize / (this.board?.size || 4);
         this.boardOffsetX = (maxWidth - boardSize) / 2;
         this.boardOffsetY = (maxHeight - boardSize) / 2 + 20;
@@ -317,8 +324,9 @@ async init() {
     }
 
     update(dt) {
-        if (this.state !== 'playing') return;
-        this.board.update(dt); particleSystem.update(dt);
+        if (this.state !== 'playing') { particleSystem.update(dt); return; }
+        if (!this.board) return;
+        this.board.update(dt); this.board.pruneExitFx(); particleSystem.update(dt);
         if (this.isBossLevel && this.bossManager.isActive()) {
             const bossDefeated = this.bossManager.update(dt, this.board);
             if (bossDefeated) this.onBossDefeated();
@@ -326,6 +334,7 @@ async init() {
             if (boss) { const remaining = Math.max(0, boss.attackInterval - boss.attackTimer); ui.showBossTimer(remaining); }
         }
         if (this.trauma > 0) this.trauma = Math.max(0, this.trauma - CONFIG.TRAUMA_DECAY);
+        if (this.hintHighlight) { this.hintHighlight.timer -= dt; if (this.hintHighlight.timer <= 0) this.hintHighlight = null; }
         this.autoSaveTimer += dt;
         if (this.autoSaveTimer >= CONFIG.AUTO_SAVE_INTERVAL / 1000) { this.saveLevelState(); this.autoSaveTimer = 0; }
         this.totalPlayTime += dt; ui.updateHUD(this.getHUDData());
@@ -570,6 +579,9 @@ async init() {
         this.ctx.save();
         if (this.trauma > 0) { const shake = this.trauma * this.trauma * CONFIG.MAX_SHAKE; this.ctx.translate((Math.random() - 0.5) * shake, (Math.random() - 0.5) * shake); }
         this.ctx.clearRect(0, 0, this.canvas.width / this.dpr, this.canvas.height / this.dpr);
+
+        if (!this.board) { particleSystem.render(); this.ctx.restore(); return; }
+
         this.drawBoardBackground(); this.drawGrid(); this.drawArrows(); this.drawSelection(); particleSystem.render();
         
         // Near-miss feedback: sisa 1-2 panah, border berdenyut hijau
@@ -716,29 +728,55 @@ async init() {
     }
 
     processInput(x, y) {
+        if (!this.board) return;
         const cell = this.board.screenToGrid(x, y, this.cellSize, this.boardOffsetX, this.boardOffsetY);
         if (!cell) return;
         const arrow = this.board.getArrow(cell.row, cell.col);
         if (!arrow) return;
         audioManager.resume();
-        this.pushUndoState();
         const result = this.board.tryExitArrow(arrow);
-        if (result.success) this.onArrowExit(arrow, result.blockers);
-        else this.onArrowBlocked(arrow, result.blockers);
+        if (result.success) {
+            // Push snapshot SEBELUM reaksi diterapkan agar undo akurat
+            this.pushUndoState();
+            this.onArrowExit(arrow, result.blockers);
+        } else {
+            this.onArrowBlocked(arrow, result.blockers);
+        }
     }
 
     pushUndoState() { this.undoStack.push(this.serializeLevelState()); if (this.undoStack.length > 20) this.undoStack.shift(); }
 
     undo() {
-        if (this.undoStack.length === 0 || this.undoCount <= 0) { audioManager.playSFX('button_click'); return; }
-        this.undoCount--; const state = this.undoStack.pop(); this.deserializeLevelState(state); this.combo = 0; this.mistakes = 0; audioManager.playSFX('button_click'); ui.showToast(`${t('undo')} (${this.undoCount} left)`);
+        if (this.undoStack.length === 0) { ui.showToast(t('no_undo')); audioManager.playSFX('button_click'); return; }
+        if (this.undoCount <= 0) { ui.showToast(t('no_undo')); audioManager.playSFX('button_click'); return; }
+        this.undoCount--;
+        const state = this.undoStack.pop();
+        this.deserializeLevelState(state);
+        this.combo = 0;
+        this.mistakes = 0;
+        this.trauma = 0;
+        this.hitStopTimer = 0;
+        particleSystem.clear();
+        // Keluar dari state dead-end saat berhasil undo
+        if (this.state === 'deadend') { this.state = 'playing'; ui.hideModal('deadend-modal'); adsManager.gameplayStart(); }
+        audioManager.playSFX('button_click');
+        ui.showToast(`${t('undo')} (${this.undoCount} ${t('left')})`);
     }
 
     useHint() {
-        if (this.hintsUsed >= 3) return;
+        if (!this.board) return;
+        if (this.hintsUsed >= 3) { ui.showToast(t('no_hints_left')); return; }
         for (const arrow of this.board.getActiveArrows()) {
-            if (arrow.canExit(this.board)) { this.selectedCell = { row: arrow.row, col: arrow.col }; ui.showToast(`${t('hint')}: Row ${arrow.row + 1}, Col ${arrow.col + 1}`); this.hintsUsed++; audioManager.playSFX('button_click'); return; }
+            if (arrow.canExit(this.board)) {
+                this.selectedCell = { row: arrow.row, col: arrow.col };
+                this.hintHighlight = { row: arrow.row, col: arrow.col, timer: 2 };
+                this.hintsUsed++;
+                audioManager.playSFX('button_click');
+                ui.showToast(`${t('hint_used')}`, 2000);
+                return;
+            }
         }
+        ui.showToast(t('deadend'));
     }
 // ========== ARROW EXIT / BLOCKED LOGIC ==========
     onArrowExit(arrow, blockers) {
@@ -753,9 +791,19 @@ async init() {
         if (this.combo % CONFIG.COMBO_THRESHOLD === 0) { this.score += CONFIG.SCORE_COMBO_BONUS; this.trauma += 0.2; audioManager.playCombo(this.combo); ui.showCombo(this.combo); this.announceCombo(this.combo); }
         if (this.combo >= CONFIG.COMBO_ESCALATION_THRESHOLD && this.combo % 5 === 0) audioManager.playSFX('combo_escalation');
         this.announceArrowExit(arrow);
-        const involvedArrows = [...blockers];
+        const involvedArrows = blockers.filter(b => b !== arrow && !b.isExiting);
         const reactions = detectReactions(arrow, involvedArrows);
-        for (const reaction of reactions) { const affected = applyReaction(this.board, reaction); this.reactionsTriggered++; this.score += CONFIG.SCORE_REACTION_BONUS; this.trauma += 0.4; audioManager.playReaction(reaction.type); ui.showReaction(reaction.type); analytics.track('reaction_triggered', { type: reaction.type, level: this.currentLevel }); this.announceReaction(reaction.type); }
+        for (const reaction of reactions) {
+            const affected = applyReaction(this.board, reaction);
+            // Panah yang hancur/terhisap reaksi harus dihapus dari list & grid
+            for (const a of affected) {
+                if (!a.isExiting) {
+                    this.board.arrows = this.board.arrows.filter(x => x.id !== a.id);
+                    if (this.board.grid[a.row]?.[a.col] === a) this.board.grid[a.row][a.col] = null;
+                    particleSystem.emitArrowExit(a.row, a.col, a.element, this.cellSize, this.boardOffsetX, this.boardOffsetY);
+                }
+            }
+            this.reactionsTriggered++; this.score += CONFIG.SCORE_REACTION_BONUS; this.trauma += 0.4; audioManager.playReaction(reaction.type); ui.showReaction(reaction.type); analytics.track('reaction_triggered', { type: reaction.type, level: this.currentLevel }); this.announceReaction(reaction.type); }
         
         // Auto-save after successful move
         this.saveGame();
@@ -832,18 +880,60 @@ async init() {
 
     drawGrid() {}
 
+    // Gambar satu bentuk panah di posisi saat ini (dipakai papan & animasi keluar)
+    drawArrowShape(arrow, centerX, centerY, scale = 1, alpha = 1) {
+        const size = this.cellSize * 0.35 * (arrow.squashStretch || 1) * scale;
+        this.ctx.save();
+        this.ctx.globalAlpha = alpha;
+        this.ctx.translate(centerX, centerY);
+        this.ctx.rotate(DIRECTIONS[arrow.direction].angle);
+        const color = this.getElementColor(arrow.element);
+        // Gradien halus + glow agar panah terlihat "hidup"
+        const grad = this.ctx.createLinearGradient(0, -size, 0, size);
+        grad.addColorStop(0, color);
+        grad.addColorStop(1, this.shadeColor(color, -30));
+        this.ctx.fillStyle = grad;
+        this.ctx.shadowColor = color;
+        this.ctx.shadowBlur = this.highContrast ? 0 : 8 * alpha;
+        this.ctx.beginPath();
+        this.ctx.moveTo(0, -size); this.ctx.lineTo(size * 0.6, size * 0.4); this.ctx.lineTo(size * 0.2, size * 0.4);
+        this.ctx.lineTo(size * 0.2, size); this.ctx.lineTo(-size * 0.2, size); this.ctx.lineTo(-size * 0.2, size * 0.4);
+        this.ctx.lineTo(-size * 0.6, size * 0.4); this.ctx.closePath(); this.ctx.fill();
+        this.ctx.shadowBlur = 0;
+        // Highlight specular kecil di ujung atas panah
+        this.ctx.fillStyle = 'rgba(255,255,255,0.35)';
+        this.ctx.beginPath(); this.ctx.moveTo(0, -size * 0.85); this.ctx.lineTo(size * 0.22, -size * 0.15); this.ctx.lineTo(-size * 0.22, -size * 0.15); this.ctx.closePath(); this.ctx.fill();
+        if (arrow.element !== ELEMENTS.PLAIN) this.drawElementIndicator(arrow.element, size);
+        if (arrow.isFrozen) { this.ctx.fillStyle = 'rgba(116, 185, 255, 0.5)'; this.ctx.beginPath(); this.ctx.arc(0, 0, size * 1.2, 0, Math.PI * 2); this.ctx.fill(); this.ctx.strokeStyle = '#74b9ff'; this.ctx.lineWidth = 2; this.ctx.stroke(); }
+        if (arrow.wasBlocked) { this.ctx.strokeStyle = '#ff4757'; this.ctx.lineWidth = 3; this.ctx.beginPath(); this.ctx.arc(0, 0, size * 1.5, 0, Math.PI * 2); this.ctx.stroke(); }
+        this.ctx.restore();
+    }
+
+    shadeColor(hex, amt) {
+        const m = /^#?([a-f\d]{2})([a-f\d]{2})([a-f\d]{2})$/i.exec(hex);
+        if (!m) return hex;
+        const c = [1, 2, 3].map(i => Math.max(0, Math.min(255, parseInt(m[i], 16) + amt)));
+        return `rgb(${c[0]},${c[1]},${c[2]})`;
+    }
+
     drawArrows() {
         for (const arrow of this.board.getActiveArrows()) {
             const centerX = this.boardOffsetX + arrow.col * this.cellSize + this.cellSize / 2;
             const centerY = this.boardOffsetY + arrow.row * this.cellSize + this.cellSize / 2;
-            const size = this.cellSize * 0.35 * (arrow.squashStretch || 1);
-            this.ctx.save(); this.ctx.translate(centerX, centerY); this.ctx.rotate(DIRECTIONS[arrow.direction].angle);
-            const color = this.getElementColor(arrow.element); this.ctx.fillStyle = color;
-            this.ctx.beginPath(); this.ctx.moveTo(0, -size); this.ctx.lineTo(size * 0.6, size * 0.4); this.ctx.lineTo(size * 0.2, size * 0.4); this.ctx.lineTo(size * 0.2, size); this.ctx.lineTo(-size * 0.2, size); this.ctx.lineTo(-size * 0.2, size * 0.4); this.ctx.lineTo(-size * 0.6, size * 0.4); this.ctx.closePath(); this.ctx.fill();
-            if (arrow.element !== ELEMENTS.PLAIN) this.drawElementIndicator(arrow.element, size);
-            if (arrow.isFrozen) { this.ctx.fillStyle = 'rgba(116, 185, 255, 0.5)'; this.ctx.beginPath(); this.ctx.arc(0, 0, size * 1.2, 0, Math.PI * 2); this.ctx.fill(); this.ctx.strokeStyle = '#74b9ff'; this.ctx.lineWidth = 2; this.ctx.stroke(); }
-            if (arrow.wasBlocked) { this.ctx.strokeStyle = '#ff4757'; this.ctx.lineWidth = 3; this.ctx.beginPath(); this.ctx.arc(0, 0, size * 1.5, 0, Math.PI * 2); this.ctx.stroke(); }
-            this.ctx.restore();
+            this.drawArrowShape(arrow, centerX, centerY);
+        }
+        // Animasi terbang panah yang sudah keluar papan (exitFx) — digambar di atas papan
+        for (const arrow of this.board.exitFx) {
+            const p = arrow.exitProgress;
+            const dir = DIRECTIONS[arrow.direction];
+            const travel = (this.canvas.width + this.canvas.height) * 0.6 * p;
+            const oc = arrow.originCol ?? arrow.col, or_ = arrow.originRow ?? arrow.row;
+            const startX = this.boardOffsetX + oc * this.cellSize + this.cellSize / 2;
+            const startY = this.boardOffsetY + or_ * this.cellSize + this.cellSize / 2;
+            const x = startX + dir.dr * travel;
+            const y = startY + dir.dc * travel;
+            const alpha = p < 0.7 ? 1 : 1 - (p - 0.7) / 0.3;
+            this.drawArrowShape(arrow, x, y, 1 - p * 0.35, alpha);
         }
     }
 
@@ -872,7 +962,20 @@ async init() {
     }
 
     drawSelection() {
-        if (this.selectedCell) { const x = this.boardOffsetX + this.selectedCell.col * this.cellSize; const y = this.boardOffsetY + this.selectedCell.row * this.cellSize; this.ctx.strokeStyle = '#00ffff'; this.ctx.lineWidth = 3; this.ctx.strokeRect(x + 2, y + 2, this.cellSize - 4, this.cellSize - 4); }
+        if (this.hintHighlight) {
+            const x = this.boardOffsetX + this.hintHighlight.col * this.cellSize;
+            const y = this.boardOffsetY + this.hintHighlight.row * this.cellSize;
+            const pulse = (Math.sin(performance.now() / 150) + 1) / 2;
+            this.ctx.save();
+            this.ctx.shadowColor = '#ffd700'; this.ctx.shadowBlur = 10 + pulse * 12;
+            this.ctx.strokeStyle = `rgba(255, 215, 0, ${0.6 + pulse * 0.4})`;
+            this.ctx.lineWidth = 3;
+            this.ctx.beginPath();
+            this.ctx.roundRect(x + 3, y + 3, this.cellSize - 6, this.cellSize - 6, 8);
+            this.ctx.stroke();
+            this.ctx.restore();
+        }
+        if (this.selectedCell) { const x = this.boardOffsetX + this.selectedCell.col * this.cellSize; const y = this.boardOffsetY + this.selectedCell.row * this.cellSize; this.ctx.save(); this.ctx.shadowColor = '#00ffff'; this.ctx.shadowBlur = 8; this.ctx.strokeStyle = '#00ffff'; this.ctx.lineWidth = 3; this.ctx.beginPath(); this.ctx.roundRect(x + 2, y + 2, this.cellSize - 4, this.cellSize - 4, 8); this.ctx.stroke(); this.ctx.restore(); }
         if (this.hoveredCell && (!this.selectedCell || this.hoveredCell.row !== this.selectedCell.row || this.hoveredCell.col !== this.selectedCell.col)) { const x = this.boardOffsetX + this.hoveredCell.col * this.cellSize; const y = this.boardOffsetY + this.hoveredCell.row * this.cellSize; this.ctx.strokeStyle = 'rgba(255,255,255,0.5)'; this.ctx.lineWidth = 2; this.ctx.strokeRect(x + 2, y + 2, this.cellSize - 4, this.cellSize - 4); }
     }
 
@@ -894,7 +997,7 @@ async init() {
 
     saveGame() {
         if (settingsManager.get('anonymousMode')) return;
-        const data = { version: CONFIG.SAVE_VERSION, checksum: '', currentLevel: this.currentLevel, totalScore: this.score, bestTimes: this.saveData.bestTimes || {}, starRatings: this.saveData.starRatings || {}, elementLevels: { FIRE: getElementLevel(ELEMENTS.FIRE), WATER: getElementLevel(ELEMENTS.WATER), ICE: getElementLevel(ELEMENTS.ICE), ELECTRIC: getElementLevel(ELEMENTS.ELECTRIC) }, crystals: crystalManager.crystals, unlockedModes: this.saveData.unlockedModes || ['campaign'], achievements: Array.from(achievementManager.unlocked), settings: settingsManager.getSaveData().settings, dailyStreak: this.saveData.dailyStreak || { lastPlayed: '', count: 0 }, totalReactionsTriggered: this.reactionsTriggered, totalPlaytime: this.totalPlayTime, firstSessionComplete: this.saveData.firstSessionComplete || false, lastLevelState: this.lastLevelState, lastPlayTime: Date.now() };
+        const data = { version: CONFIG.SAVE_VERSION, checksum: '', currentLevel: this.currentLevel, totalScore: this.score, bestTimes: this.saveData.bestTimes || {}, starRatings: this.saveData.starRatings || {}, elementLevels: { FIRE: getElementLevel(ELEMENTS.FIRE), WATER: getElementLevel(ELEMENTS.WATER), ICE: getElementLevel(ELEMENTS.ICE), ELECTRIC: getElementLevel(ELEMENTS.ELECTRIC) }, crystals: crystalManager.crystals, totalCrystalsEarned: crystalManager.totalEarned, totalCrystalsSpent: crystalManager.totalSpent, unlockedModes: this.saveData.unlockedModes || ['campaign'], achievements: Array.from(achievementManager.unlocked), settings: settingsManager.getSaveData().settings, dailyStreak: this.saveData.dailyStreak || { lastPlayed: '', count: 0 }, totalReactionsTriggered: this.reactionsTriggered, totalPlaytime: this.totalPlayTime, firstSessionComplete: true, lastLevelState: this.lastLevelState, lastPlayTime: Date.now() };
         data.checksum = securityManager.calculateChecksum(data);
         try { localStorage.setItem(CONFIG.SAVE_KEY, JSON.stringify(data)); } catch (e) { if (e.name === 'QuotaExceededError') this.handleStorageFull(); else console.warn('Save failed:', e); }
     }
@@ -924,8 +1027,15 @@ async init() {
         const data = this.saveData;
         const msg = `${t('resume_level')} ${data.currentLevel}?`;
         if (confirm(msg)) {
-            this.deserializeLevelState(data.lastLevelState);
             this.startLevel(data.currentLevel);
+            try {
+                if (data.lastLevelState) this.deserializeLevelState(data.lastLevelState);
+            } catch (e) { console.warn('Resume state invalid, fresh level', e); }
+            ui.hideAllModals();
+            document.getElementById('game-header')?.classList.remove('hidden');
+            document.getElementById('game-footer')?.classList.remove('hidden');
+            this.state = 'playing';
+            adsManager.gameplayStart();
             return true;
         }
         return false;

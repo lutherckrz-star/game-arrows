@@ -3,7 +3,8 @@
  * Service Worker for PWA offline support
  */
 
-const CACHE_NAME = 'arrow-escape-v1';
+// Naikkan versi setiap kali ada perubahan agar user langsung dapat update (bug-fix 2026-10)
+const CACHE_NAME = 'arrow-escape-v2';
 const STATIC_ASSETS = [
     './',
     './index.html',

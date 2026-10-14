@@ -2,18 +2,15 @@
   "name": "arrow-escape",
   "version": "1.0.0",
   "description": "HTML5 puzzle game with elemental reactions, chain combos, and boss battles. Built for CrazyGames and Playgama.",
+  "type": "module",
   "main": "sw.js",
-  "directories": {
-    "doc": "docs"
-  },
+  "directories": { "doc": "docs" },
   "scripts": {
-    "test": "echo \"Error: no test specified\" && exit 1"
+    "start": "python3 -m http.server 8019",
+    "test": "node --test test/"
   },
   "keywords": [],
   "author": "",
-  "license": "ISC",
-  "type": "commonjs",
-  "dependencies": {
-    "canvas": "^3.2.3"
-  }
+  "license": "MIT",
+  "dependencies": { "canvas": "^3.2.3" }
 }
