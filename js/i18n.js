@@ -20,12 +20,18 @@ export class I18n {
             this.translations = this.getFallbackTranslations();
         }
 
-        // Detect language
+        // Detect language (SDK may not be initialized yet)
         const savedLang = localStorage.getItem('arrowEscape_lang');
         if (savedLang && this.translations[savedLang]) {
             this.lang = savedLang;
         } else {
-            const cgLang = window.CrazyGames?.SDK?.user?.systemInfo?.locale;
+            // Safe SDK access - may not be initialized yet
+            let cgLang = null;
+            try {
+                cgLang = window.CrazyGames?.SDK?.user?.systemInfo?.locale;
+            } catch (e) {
+                // SDK not ready, ignore
+            }
             if (cgLang && cgLang.startsWith('id')) this.lang = 'id';
             else {
                 const browserLang = navigator.language || navigator.userLanguage;

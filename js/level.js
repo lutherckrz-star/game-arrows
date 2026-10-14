@@ -5,7 +5,7 @@
 
 import { CONFIG } from './config.js';
 import { Board } from './board.js';
-import { Arrow, DIRECTION_ORDER, ELEMENTS } from './arrow.js';
+import { Arrow, ELEMENTS } from './arrow.js';
 import { getElementLevel } from './element.js';
 
 /**
@@ -304,24 +304,10 @@ function shuffleArray(array) {
     }
 }
 
-/**
- * Get level config for display
- */
-export function getLevelInfo(levelNum) {
-    const config = getLevelConfig(levelNum);
-    return {
-        size: config.size,
-        arrowCount: config.arrowCount,
-        elements: config.elementTypes,
-        isBoss: config.isBoss
-    };
-}
-
 // Export untuk non-module
 if (typeof window !== 'undefined') {
     window.generateLevel = generateLevel;
     window.generateBossLevel = generateBossLevel;
     window.generateEndlessLevel = generateEndlessLevel;
     window.generateDailyChallenge = generateDailyChallenge;
-    window.getLevelInfo = getLevelInfo;
 }

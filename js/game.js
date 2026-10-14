@@ -7,7 +7,7 @@ import { CONFIG } from './config.js';
 import { Board } from './board.js';
 import { Arrow, DIRECTIONS, ELEMENTS } from './arrow.js';
 import { generateLevel, generateBossLevel, generateEndlessLevel, generateDailyChallenge } from './level.js';
-import { detectReactions, applyReaction, getElementLevel, upgradeElement, resetElementLevels } from './element.js';
+import { detectReactions, applyReaction, getElementLevel, upgradeElement } from './element.js';
 import { BossManager } from './boss.js';
 import { crystalManager } from './crystal.js';
 import { achievementManager } from './achievement.js';
@@ -82,6 +82,14 @@ export class Game {
 async init() {
         console.log('Initializing Arrow Escape...');
         
+        // Initialize CrazyGames SDK FIRST (needed for i18n locale detection)
+        if (window.CrazyGames && window.CrazyGames.SDK) {
+            try {
+                await window.CrazyGames.SDK.init();
+                console.log('CrazyGames SDK initialized');
+            } catch (e) { console.warn('SDK init failed:', e); }
+        }
+        
         await audioManager.init();
         await i18n.init();
         settingsManager.init();
@@ -154,13 +162,60 @@ async init() {
         document.addEventListener('keyup', (e) => this.keysPressed.delete(e.key));
         this.canvas.addEventListener('contextmenu', (e) => e.preventDefault());
         
-        // Footer buttons
+        // Centralized Event Delegation for UI buttons
+        this.bindUIActions();
+        
+        // Footer buttons (kept for direct access)
         const undoBtn = document.getElementById('undo-btn');
         const hintBtn = document.getElementById('hint-btn');
         const shareBtn = document.getElementById('share-btn');
         if (undoBtn) undoBtn.addEventListener('click', () => this.undo());
         if (hintBtn) hintBtn.addEventListener('click', () => this.useHint());
         if (shareBtn) shareBtn.addEventListener('click', () => this.shareScore());
+    }
+
+    bindUIActions() {
+        const actions = {
+            'pause': () => this.pause(),
+            'undo': () => this.undo(),
+            'hint': () => this.useHint(),
+            'share': () => this.shareScore(),
+            'retry': () => this.restartLevel(),
+            'next': () => this.nextLevel(),
+            'back-menu': () => this.quitToMenu(),
+            'close-modal': () => ui.closeTopModal(),
+            'start-game': () => menuManager.startGame(),
+            'level-select': () => menuManager.showLevelSelect(),
+            'modes': () => menuManager.showModeSelect(),
+            'element-lab': () => menuManager.showElementLab(),
+            'achievements': () => menuManager.showAchievements(),
+            'settings': () => menuManager.showSettings(),
+            'resume': () => menuManager.resumeGame(),
+            'mode-campaign': () => menuManager.startMode('campaign'),
+            'mode-endless': () => menuManager.startMode('endless'),
+            'mode-daily': () => menuManager.startMode('daily'),
+            'mode-boss-rush': () => menuManager.startMode('boss_rush'),
+            'rewarded-retry': () => menuManager.showRewardedRetry(),
+            'export-save': () => settingsManager.exportSave(),
+            'import-save': () => settingsManager.importSave(),
+            'reset-progress': () => settingsManager.showResetConfirm(),
+            'delete-data': () => settingsManager.showDeleteConfirm(),
+            'tutorial-replay': () => { if (window.game) window.game.isFirstSession = true; window.game.startLevel(1); },
+            'install-game': () => settingsManager.installGame(),
+        };
+
+        document.addEventListener('click', (e) => {
+            const btn = e.target.closest('[data-action]');
+            if (!btn) return;
+            const action = btn.dataset.action;
+            const fn = actions[action];
+            if (fn) {
+                e.preventDefault();
+                fn();
+            }
+        });
+
+        // Keyboard support for mode cards (already handled in MenuManager.bindEvents)
     }
 
     // ========== ASSET LOADING WITH FALLBACKS ==========
@@ -248,47 +303,9 @@ async init() {
                     console.warn(`Failed to generate fallback for ${key}`);
                 }
             }
-        }
+}
     }
-
-    resizeCanvas() {
-        const container = this.canvas.parentElement;
-        const rect = container.getBoundingClientRect();
-        const maxWidth = Math.min(rect.width, 500);
-        const maxHeight = rect.height * 0.7;
-        
-        this.canvas.style.width = maxWidth + 'px';
-        this.canvas.style.height = maxHeight + 'px';
-        
-        this.canvas.width = maxWidth * this.dpr;
-        this.canvas.height = maxHeight * this.dpr;
-        this.ctx.setTransform(1, 0, 0, 1, 0, 0);
-        this.ctx.scale(this.dpr, this.dpr);
-        
-        const boardSize = Math.min(maxWidth, maxHeight * 0.9);
-        this.cellSize = boardSize / (this.board?.size || 4);
-        this.boardOffsetX = (maxWidth - boardSize) / 2;
-        this.boardOffsetY = (maxHeight - boardSize) / 2 + 20;
-    }
-
-    setupInput() {
-        this.canvas.addEventListener('click', (e) => this.handleClick(e));
-        this.canvas.addEventListener('mousemove', (e) => this.handleMouseMove(e));
-        this.canvas.addEventListener('touchstart', (e) => this.handleTouchStart(e), { passive: false });
-        this.canvas.addEventListener('touchend', (e) => this.handleTouchEnd(e), { passive: false });
-        document.addEventListener('keydown', (e) => this.handleKeyDown(e));
-        document.addEventListener('keyup', (e) => this.keysPressed.delete(e.key));
-        this.canvas.addEventListener('contextmenu', (e) => e.preventDefault());
-        
-        // Footer buttons
-        const undoBtn = document.getElementById('undo-btn');
-        const hintBtn = document.getElementById('hint-btn');
-        const shareBtn = document.getElementById('share-btn');
-        if (undoBtn) undoBtn.addEventListener('click', () => this.undo());
-        if (hintBtn) hintBtn.addEventListener('click', () => this.useHint());
-        if (shareBtn) shareBtn.addEventListener('click', () => this.shareScore());
-    }
-
+    
     gameLoop(timestamp) {
         const dt = Math.min((timestamp - this.lastTime) / 1000, 0.1);
         this.lastFrameTime = dt; // For FPS counter

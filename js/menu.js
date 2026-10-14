@@ -13,128 +13,48 @@ export class MenuManager {
     }
 
     init() {
-        this.createMainMenu();
-        this.createLevelSelect();
-        this.createModeSelect();
-        this.createPauseMenu();
         this.bindEvents();
     }
-
-    createMainMenu() {
-        const container = document.getElementById('modals-container');
-        const menu = document.createElement('div');
-        menu.id = 'main-menu';
-        menu.className = 'modal';
-        menu.innerHTML = `
-            <div class="modal-content">
-                <h1 data-i18n="play">Play</h1>
-                <div class="menu-buttons">
-                    <button id="btn-continue" class="menu-btn primary" data-i18n="play"></button>
-                    <button id="btn-level-select" class="menu-btn" data-i18n="level_select"></button>
-                    <button id="btn-modes" class="menu-btn" data-i18n="modes"></button>
-                    <button id="btn-element-lab" class="menu-btn" data-i18n="element_lab"></button>
-                    <button id="btn-achievements" class="menu-btn" data-i18n="achievements"></button>
-                    <button id="btn-settings" class="menu-btn icon-btn" aria-label="Settings">
-                        <img src="assets/images/icon_settings.png" alt="" class="icon">
-                    </button>
-                </div>
-                <div class="menu-info">
-                    <span id="menu-crystals" class="crystal-display">💎 0</span>
-                </div>
-            </div>
-        `;
-        container.appendChild(menu);
-    }
-
-    createLevelSelect() {
-        const container = document.getElementById('modals-container');
-        const menu = document.createElement('div');
-        menu.id = 'level-select';
-        menu.className = 'modal hidden';
-        menu.innerHTML = `
-            <div class="modal-content">
-                <header class="modal-header">
-                    <h2 data-i18n="level_select">Levels</h2>
-                    <button id="btn-level-back" class="icon-btn" aria-label="Back">
-                        <img src="assets/images/icon_undo.png" alt="" class="icon">
-                    </button>
-                </header>
-                <div id="level-grid" class="level-grid"></div>
-            </div>
-        `;
-        container.appendChild(menu);
-    }
-
-    createModeSelect() {
-        const container = document.getElementById('modals-container');
-        const menu = document.createElement('div');
-        menu.id = 'mode-select';
-        menu.className = 'modal hidden';
-        menu.innerHTML = `
-            <div class="modal-content">
-                <header class="modal-header">
-                    <h2 data-i18n="modes">Modes</h2>
-                    <button id="btn-mode-back" class="icon-btn" aria-label="Back">
-                        <img src="assets/images/icon_undo.png" alt="" class="icon">
-                    </button>
-                </header>
-                <div class="mode-grid">
-                    <div class="mode-card" data-mode="campaign">
-                        <h3 data-i18n="play">Campaign</h3>
-                        <p>50 levels with elemental progression</p>
-                    </div>
-                    <div class="mode-card" data-mode="endless" id="mode-endless">
-                        <h3 data-i18n="endless">Endless</h3>
-                        <p data-i18n="unlock_endless">Unlocks after Level 50</p>
-                    </div>
-                    <div class="mode-card" data-mode="daily" id="mode-daily">
-                        <h3 data-i18n="daily_challenge">Daily Challenge</h3>
-                        <p data-i18n="unlock_daily">Unlocks after Level 10</p>
-                    </div>
-                    <div class="mode-card" data-mode="boss_rush" id="mode-boss-rush">
-                        <h3 data-i18n="boss_rush">Boss Rush</h3>
-                        <p data-i18n="unlock_boss_rush">Unlocks after Final Boss</p>
-                    </div>
-                </div>
-            </div>
-        `;
-        container.appendChild(menu);
-    }
-
-    createPauseMenu() {
-        const container = document.getElementById('modals-container');
-        const menu = document.createElement('div');
-        menu.id = 'pause-menu';
-        menu.className = 'modal hidden';
-        menu.innerHTML = `
-            <div class="modal-content">
-                <h2 data-i18n="pause">Paused</h2>
-                <div class="menu-buttons">
-                    <button id="btn-resume" class="menu-btn primary" data-i18n="resume"></button>
-                    <button id="btn-restart" class="menu-btn" data-i18n="restart"></button>
-                    <button id="btn-pause-settings" class="menu-btn" data-i18n="settings"></button>
-                    <button id="btn-quit-menu" class="menu-btn danger" data-i18n="back_to_menu"></button>
-                </div>
-            </div>
-        `;
-        container.appendChild(menu);
-    }
 bindEvents() {
+        // Main menu buttons
         document.getElementById('btn-continue')?.addEventListener('click', () => this.startGame());
         document.getElementById('btn-level-select')?.addEventListener('click', () => this.showLevelSelect());
         document.getElementById('btn-modes')?.addEventListener('click', () => this.showModeSelect());
         document.getElementById('btn-element-lab')?.addEventListener('click', () => this.showElementLab());
         document.getElementById('btn-achievements')?.addEventListener('click', () => this.showAchievements());
         document.getElementById('btn-settings')?.addEventListener('click', () => this.showSettings());
+        
+        // Back buttons
         document.getElementById('btn-level-back')?.addEventListener('click', () => this.showMainMenu());
         document.getElementById('btn-mode-back')?.addEventListener('click', () => this.showMainMenu());
+        document.getElementById('btn-lab-back')?.addEventListener('click', () => this.showMainMenu());
+        document.getElementById('btn-achievements-back')?.addEventListener('click', () => this.showMainMenu());
+        document.getElementById('btn-settings-back')?.addEventListener('click', () => this.showMainMenu());
+        
+        // Mode cards - use buttons for accessibility
         document.querySelectorAll('.mode-card').forEach(card => {
             card.addEventListener('click', () => this.startMode(card.dataset.mode));
+            card.addEventListener('keydown', (e) => { if (e.key === 'Enter' || e.key === ' ') this.startMode(card.dataset.mode); });
+            card.setAttribute('tabindex', '0');
+            card.setAttribute('role', 'button');
         });
+        
+        // Pause menu buttons
         document.getElementById('btn-resume')?.addEventListener('click', () => this.resumeGame());
         document.getElementById('btn-restart')?.addEventListener('click', () => this.restartLevel());
         document.getElementById('btn-pause-settings')?.addEventListener('click', () => this.showSettings());
         document.getElementById('btn-quit-menu')?.addEventListener('click', () => this.quitToMenu());
+        
+        // Other modal buttons
+        document.getElementById('btn-next-level')?.addEventListener('click', () => this.nextLevel());
+        document.getElementById('btn-level-complete-menu')?.addEventListener('click', () => this.backToMenu());
+        document.getElementById('btn-retry-free')?.addEventListener('click', () => this.retryLevel());
+        document.getElementById('btn-retry-ad')?.addEventListener('click', () => this.showRewardedRetry());
+        document.getElementById('btn-failed-menu')?.addEventListener('click', () => this.backToMenu());
+        document.getElementById('btn-deadend-undo')?.addEventListener('click', () => this.undoMove());
+        document.getElementById('btn-deadend-restart')?.addEventListener('click', () => this.restartLevel());
+        document.getElementById('btn-deadend-menu')?.addEventListener('click', () => this.backToMenu());
+        
         document.addEventListener('keydown', (e) => { if (e.key === 'Escape') this.togglePause(); });
     }
 
@@ -161,6 +81,13 @@ bindEvents() {
     togglePause() { if (this.currentMenu === 'game' && window.game && !window.game.isPaused) { window.game.pause(); this.showPauseMenu(); } else if (this.currentMenu === 'pause') { this.resumeGame(); } }
     resumeGame() { this.hideAllModals(); if (window.game) window.game.resume(); this.currentMenu = 'game'; }
     restartLevel() { this.hideAllModals(); if (window.game) window.game.restartLevel(); this.currentMenu = 'game'; }
+    
+    nextLevel() { this.hideAllModals(); if (window.game && window.game.currentLevel < CONFIG.CAMPAIGN_LEVELS) window.game.startLevel(window.game.currentLevel + 1); this.currentMenu = 'game'; }
+    backToMenu() { this.hideAllModals(); if (window.game) window.game.quitToMenu(); this.showMainMenu(); }
+    undoMove() { if (window.game) window.game.undo(); }
+    
+    showRewardedRetry() { if (window.adsManager) window.adsManager.showRewardedWithLoading('retry', (success) => { if (success && window.game) window.game.addRetry(); }); }
+    
     quitToMenu() { if (confirm(t('exit_confirm'))) { this.hideAllModals(); if (window.game) window.game.quitToMenu(); this.showMainMenu(); } }
 }
 

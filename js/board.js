@@ -4,7 +4,7 @@
  */
 
 import { CONFIG } from './config.js';
-import { Arrow, DIRECTIONS, DIRECTION_ORDER, ELEMENTS } from './arrow.js';
+import { Arrow, DIRECTIONS, ELEMENTS } from './arrow.js';
 import { detectReactions, applyReaction, getElementLevel } from './element.js';
 
 export class Board {

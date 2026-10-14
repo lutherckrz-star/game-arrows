@@ -35,7 +35,7 @@
                     <img src="assets/images/icon_crystal.png" alt="" class="icon">
                     <span id="crystal-count">0</span>
                 </button>
-                <button id="pause-btn" class="icon-btn" aria-label="Pause">
+                <button id="pause-btn" class="icon-btn" aria-label="Pause" data-action="pause">
                     <img src="assets/images/icon_pause.png" alt="" class="icon">
                 </button>
             </div>
@@ -43,31 +43,30 @@
 
         <!-- Footer Controls -->
         <footer id="game-footer" class="hidden">
-            <button id="undo-btn" class="control-btn" aria-label="Undo (U)">
+            <button id="undo-btn" class="control-btn" aria-label="Undo (U)" data-action="undo">
                 <img src="assets/images/icon_undo.png" alt="" class="icon">
             </button>
-            <button id="hint-btn" class="control-btn" aria-label="Hint (H)">
+            <button id="hint-btn" class="control-btn" aria-label="Hint (H)" data-action="hint">
                 <img src="assets/images/icon_hint.png" alt="" class="icon">
             </button>
-            <button id="share-btn" class="control-btn" aria-label="Share">
+            <button id="share-btn" class="control-btn" aria-label="Share" data-action="share">
                 <img src="assets/images/icon_share.png" alt="" class="icon">
             </button>
         </footer>
 
-        <!-- Modals Container -->
+        <!-- Modals Container - ALL modals are DIRECT children -->
         <div id="modals-container">
-
-<!-- Main Menu -->
+            <!-- Main Menu -->
             <div id="main-menu" class="modal">
                 <div class="modal-content">
                     <h1 data-i18n="play">Play</h1>
                     <div class="menu-buttons">
-                        <button id="btn-continue" class="menu-btn primary" data-i18n="play"></button>
-                        <button id="btn-level-select" class="menu-btn" data-i18n="level_select"></button>
-                        <button id="btn-modes" class="menu-btn" data-i18n="modes"></button>
-                        <button id="btn-element-lab" class="menu-btn" data-i18n="element_lab"></button>
-                        <button id="btn-achievements" class="menu-btn" data-i18n="achievements"></button>
-                        <button id="btn-settings" class="menu-btn icon-btn" aria-label="Settings">
+                        <button id="btn-continue" class="menu-btn primary" data-i18n="play" data-action="start-game"></button>
+                        <button id="btn-level-select" class="menu-btn" data-i18n="level_select" data-action="level-select"></button>
+                        <button id="btn-modes" class="menu-btn" data-i18n="modes" data-action="modes"></button>
+                        <button id="btn-element-lab" class="menu-btn" data-i18n="element_lab" data-action="element-lab"></button>
+                        <button id="btn-achievements" class="menu-btn" data-i18n="achievements" data-action="achievements"></button>
+                        <button id="btn-settings" class="menu-btn icon-btn" aria-label="Settings" data-action="settings">
                             <img src="assets/images/icon_settings.png" alt="" class="icon">
                         </button>
                     </div>
@@ -82,7 +81,7 @@
                 <div class="modal-content">
                     <header class="modal-header">
                         <h2 data-i18n="level_select">Levels</h2>
-                        <button id="btn-level-back" class="icon-btn" aria-label="Back">
+                        <button id="btn-level-back" class="icon-btn" aria-label="Back" data-action="close-modal">
                             <img src="assets/images/icon_undo.png" alt="" class="icon">
                         </button>
                     </header>
@@ -95,25 +94,32 @@
                 <div class="modal-content">
                     <header class="modal-header">
                         <h2 data-i18n="modes">Modes</h2>
-                        <button id="btn-mode-back" class="icon-btn" aria-label="Back">
+                        <button id="btn-mode-back" class="icon-btn" aria-label="Back" data-action="close-modal">
                             <img src="assets/images/icon_undo.png" alt="" class="icon">
                         </button>
                     </header>
                     <div class="mode-grid">
-                        <div class="mode-card" data-mode="campaign">
+                        <button class="mode-card" data-mode="campaign" data-action="mode-campaign" tabindex="0" role="button">
                             <h3 data-i18n="play">Campaign</h3>
                             <p>50 levels with elemental progression</p>
-                        </div>
-                        <div class="mode-card" data-mode="endless" id="mode-endless">
+                        </button>
+                        <button class="mode-card" data-mode="endless" id="mode-endless" data-action="mode-endless" tabindex="0" role="button">
                             <h3 data-i18n="endless">Endless</h3>
                             <p data-i18n="unlock_endless">Unlocks after Level 50</p>
-                        </div>
-                        <div class="mode-card" data-mode="daily" id="mode-daily">
+                        </button>
+                        <button class="mode-card" data-mode="daily" id="mode-daily" data-action="mode-daily" tabindex="0" role="button">
                             <h3 data-i18n="daily_challenge">Daily Challenge</h3>
                             <p data-i18n="unlock_daily">Unlocks after Level 10</p>
-                        </div>
-                        <div class="mode-card" data-mode="boss_rush" id="mode-boss-rush">
-<!-- Level Complete Modal -->
+                        </button>
+                        <button class="mode-card" data-mode="boss_rush" id="mode-boss-rush" data-action="mode-boss-rush" tabindex="0" role="button">
+                            <h3 data-i18n="boss_rush">Boss Rush</h3>
+                            <p data-i18n="unlock_boss_rush">Unlocks after Final Boss</p>
+                        </button>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Level Complete Modal -->
             <div id="level-complete-modal" class="modal hidden">
                 <div class="modal-content">
                     <h2 data-i18n="level_complete">Level Complete!</h2>
@@ -124,8 +130,8 @@
                     <div class="no-mistake" style="color: var(--gold); margin: var(--spacing-sm) 0;"></div>
                     <div class="speed-bonus" style="color: var(--gold); margin: var(--spacing-sm) 0;"></div>
                     <div class="menu-buttons" style="margin-top: var(--spacing-lg);">
-                        <button id="btn-next-level" class="menu-btn primary" data-i18n="next_level"></button>
-                        <button id="btn-level-complete-menu" class="menu-btn" data-i18n="back_to_menu"></button>
+                        <button id="btn-next-level" class="menu-btn primary" data-i18n="next_level" data-action="next"></button>
+                        <button id="btn-level-complete-menu" class="menu-btn" data-i18n="back_to_menu" data-action="back-menu"></button>
                     </div>
                 </div>
             </div>
@@ -136,9 +142,9 @@
                     <h2 data-i18n="level_failed">Level Failed</h2>
                     <p style="text-align: center; margin: var(--spacing-md) 0; color: var(--text-dim);" data-i18n="deadend">Dead End!</p>
                     <div class="menu-buttons">
-                        <button id="btn-retry-free" class="menu-btn primary" data-i18n="retry"></button>
-                        <button id="btn-retry-ad" class="menu-btn" data-i18n="watch_ad"></button>
-                        <button id="btn-failed-menu" class="menu-btn" data-i18n="back_to_menu"></button>
+                        <button id="btn-retry-free" class="menu-btn primary" data-i18n="retry" data-action="retry"></button>
+                        <button id="btn-retry-ad" class="menu-btn" data-i18n="watch_ad" data-action="rewarded-retry"></button>
+                        <button id="btn-failed-menu" class="menu-btn" data-i18n="back_to_menu" data-action="back-menu"></button>
                     </div>
                 </div>
             </div>
@@ -149,9 +155,9 @@
                     <h2 data-i18n="deadend">Dead End!</h2>
                     <p style="text-align: center; margin: var(--spacing-md) 0; color: var(--text-dim);">No more moves possible!</p>
                     <div class="menu-buttons">
-                        <button id="btn-deadend-undo" class="menu-btn primary" data-i18n="undo"></button>
-                        <button id="btn-deadend-restart" class="menu-btn" data-i18n="restart"></button>
-                        <button id="btn-deadend-menu" class="menu-btn" data-i18n="back_to_menu"></button>
+                        <button id="btn-deadend-undo" class="menu-btn primary" data-i18n="undo" data-action="undo"></button>
+                        <button id="btn-deadend-restart" class="menu-btn" data-i18n="restart" data-action="retry"></button>
+                        <button id="btn-deadend-menu" class="menu-btn" data-i18n="back_to_menu" data-action="back-menu"></button>
                     </div>
                 </div>
             </div>
@@ -161,7 +167,7 @@
                 <div class="modal-content">
                     <header class="modal-header">
                         <h2 data-i18n="element_lab_title">Element Lab</h2>
-                        <button id="btn-lab-back" class="icon-btn" aria-label="Back">
+                        <button id="btn-lab-back" class="icon-btn" aria-label="Back" data-action="close-modal">
                             <img src="assets/images/icon_undo.png" alt="" class="icon">
                         </button>
                     </header>
@@ -172,25 +178,25 @@
                     <div id="element-lab-content"></div>
                 </div>
             </div>
-                            <h3 data-i18n="boss_rush">Boss Rush</h3>
-                            <p data-i18n="unlock_boss_rush">Unlocks after Final Boss</p>
-                        </div>
-                    </div>
-                </div>
-            </div>
 
             <!-- Pause Menu -->
             <div id="pause-menu" class="modal hidden">
                 <div class="modal-content">
                     <h2 data-i18n="pause">Paused</h2>
                     <div class="menu-buttons">
-                        <button id="btn-resume" class="menu-btn primary" data-i18n="resume"></button>
-<!-- Achievements Modal -->
+                        <button id="btn-resume" class="menu-btn primary" data-i18n="resume" data-action="resume"></button>
+                        <button id="btn-pause-restart" class="menu-btn" data-i18n="restart" data-action="retry"></button>
+                        <button id="btn-pause-menu" class="menu-btn" data-i18n="back_to_menu" data-action="back-menu"></button>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Achievements Modal -->
             <div id="achievements-modal" class="modal hidden">
                 <div class="modal-content">
                     <header class="modal-header">
                         <h2 data-i18n="achievements">Achievements</h2>
-                        <button id="btn-achievements-back" class="icon-btn" aria-label="Back">
+                        <button id="btn-achievements-back" class="icon-btn" aria-label="Back" data-action="close-modal">
                             <img src="assets/images/icon_undo.png" alt="" class="icon">
                         </button>
                     </header>
@@ -203,7 +209,7 @@
                 <div class="modal-content">
                     <header class="modal-header">
                         <h2 data-i18n="settings">Settings</h2>
-                        <button id="btn-settings-back" class="icon-btn" aria-label="Back">
+                        <button id="btn-settings-back" class="icon-btn" aria-label="Back" data-action="close-modal">
                             <img src="assets/images/icon_undo.png" alt="" class="icon">
                         </button>
                     </header>
@@ -215,49 +221,6 @@
                                 <div class="setting-label" data-i18n="sound">Sound</div>
                             </div>
                             <input type="checkbox" id="setting-sound" data-setting="sound" checked>
-<!-- Toasts Container -->
-        <div id="toasts-container" aria-live="polite"></div>
-
-        <!-- Landscape Warning -->
-        <div id="landscape-warning" class="hidden" role="alert">
-            <div class="landscape-content">
-                <span class="rotate-icon">📱</span>
-                <p data-i18n="rotate_device">Putar kembali ke portrait untuk bermain</p>
-            </div>
-        </div>
-    </div>
-
-    <!-- Scripts -->
-    <script src="js/config.js"></script>
-    <script src="js/i18n.js"></script>
-    <script src="js/arrow.js"></script>
-    <script src="js/element.js"></script>
-    <script src="js/board.js"></script>
-    <script src="js/level.js"></script>
-    <script src="js/boss.js"></script>
-    <script src="js/crystal.js"></script>
-    <script src="js/achievement.js"></script>
-    <script src="js/menu.js"></script>
-    <script src="js/settings.js"></script>
-    <script src="js/audio.js"></script>
-    <script src="js/ads.js"></script>
-    <script src="js/analytics.js"></script>
-    <script src="js/security.js"></script>
-    <script src="js/particles.js"></script>
-    <script src="js/ui.js"></script>
-    <script src="js/game.js"></script>
-
-    <!-- CrazyGames SDK v3 -->
-    <script src="https://sdk.crazygames.com/crazygames-sdk-v3.js"></script>
-    <script>
-        document.addEventListener('DOMContentLoaded', async () => {
-            const game = new Game();
-            window.game = game;
-            await game.init();
-        });
-    </script>
-</body>
-</html>
                         </div>
                         <div class="setting-row">
                             <div>
@@ -309,20 +272,20 @@
                     <div class="settings-section">
                         <h3>Data</h3>
                         <div class="setting-actions">
-                            <button id="btn-export-save" class="menu-btn" data-i18n="export_save"></button>
-                            <button id="btn-import-save" class="menu-btn" data-i18n="import_save"></button>
-                            <button id="btn-reset-progress" class="menu-btn danger" data-i18n="reset_progress"></button>
-                            <button id="btn-delete-data" class="menu-btn danger" data-i18n="delete_data"></button>
+                            <button id="btn-export-save" class="menu-btn" data-i18n="export_save" data-action="export-save"></button>
+                            <button id="btn-import-save" class="menu-btn" data-i18n="import_save" data-action="import-save"></button>
+                            <button id="btn-reset-progress" class="menu-btn danger" data-i18n="reset_progress" data-action="reset-progress"></button>
+                            <button id="btn-delete-data" class="menu-btn danger" data-i18n="delete_data" data-action="delete-data"></button>
                         </div>
                     </div>
 
                     <div class="settings-section">
                         <h3>Other</h3>
                         <div class="setting-row">
-                            <button id="btn-tutorial-replay" class="menu-btn" data-i18n="tutorial_replay"></button>
+                            <button id="btn-tutorial-replay" class="menu-btn" data-i18n="tutorial_replay" data-action="tutorial-replay"></button>
                         </div>
                         <div class="setting-row">
-                            <button id="btn-install-game" class="menu-btn" data-i18n="install_game"></button>
+                            <button id="btn-install-game" class="menu-btn" data-i18n="install_game" data-action="install-game"></button>
                         </div>
                         <div class="setting-row">
                             <a href="#" id="privacy-policy-link" data-i18n="privacy_policy" style="color: var(--fire); text-decoration: none;"></a>
@@ -336,10 +299,10 @@
             </div>
         </div>
 
-        <!-- Toasts Container -->
+        <!-- Toasts Container (OUTSIDE modals-container) -->
         <div id="toasts-container" aria-live="polite"></div>
 
-        <!-- Landscape Warning -->
+        <!-- Landscape Warning (OUTSIDE modals-container) -->
         <div id="landscape-warning" class="hidden" role="alert">
             <div class="landscape-content">
                 <span class="rotate-icon">📱</span>
@@ -349,28 +312,28 @@
     </div>
 
     <!-- Scripts -->
-    <script src="js/config.js"></script>
-    <script src="js/i18n.js"></script>
-    <script src="js/arrow.js"></script>
-    <script src="js/element.js"></script>
-    <script src="js/board.js"></script>
-    <script src="js/level.js"></script>
-    <script src="js/boss.js"></script>
-    <script src="js/crystal.js"></script>
-    <script src="js/achievement.js"></script>
-    <script src="js/menu.js"></script>
-    <script src="js/settings.js"></script>
-    <script src="js/audio.js"></script>
-    <script src="js/ads.js"></script>
-    <script src="js/analytics.js"></script>
-    <script src="js/security.js"></script>
-    <script src="js/particles.js"></script>
-    <script src="js/ui.js"></script>
-    <script src="js/game.js"></script>
+    <script type="module" src="js/config.js"></script>
+    <script type="module" src="js/i18n.js"></script>
+    <script type="module" src="js/arrow.js"></script>
+    <script type="module" src="js/element.js"></script>
+    <script type="module" src="js/board.js"></script>
+    <script type="module" src="js/level.js"></script>
+    <script type="module" src="js/boss.js"></script>
+    <script type="module" src="js/crystal.js"></script>
+    <script type="module" src="js/achievement.js"></script>
+    <script type="module" src="js/menu.js"></script>
+    <script type="module" src="js/settings.js"></script>
+    <script type="module" src="js/audio.js"></script>
+    <script type="module" src="js/ads.js"></script>
+    <script type="module" src="js/analytics.js"></script>
+    <script type="module" src="js/security.js"></script>
+    <script type="module" src="js/particles.js"></script>
+    <script type="module" src="js/ui.js"></script>
+    <script type="module" src="js/game.js"></script>
 
     <!-- CrazyGames SDK v3 -->
     <script src="https://sdk.crazygames.com/crazygames-sdk-v3.js"></script>
-    <script>
+    <script type="module">
         document.addEventListener('DOMContentLoaded', async () => {
             const game = new Game();
             window.game = game;

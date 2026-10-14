@@ -17,12 +17,41 @@ export class AudioManager {
         this.musicEnabled = true;
         this.currentMusic = null;
         this.isInitialized = false;
+        this._userGestureHandled = false;
+        this._pendingSfxEnabled = true;
+        this._pendingMusicEnabled = true;
     }
 
     async init() {
         if (this.isInitialized) return;
         
-        try {
+        // Don't create AudioContext yet - wait for user gesture
+        this._bindUserGesture();
+        
+        await this.loadSFX();
+        
+        this.isInitialized = true;
+        console.log('AudioManager initialized (pending user gesture)');
+    }
+
+    _bindUserGesture() {
+        if (this._userGestureHandled) return;
+        const resumeAudio = () => {
+            if (this.audioCtx && this.audioCtx.state === 'suspended') {
+                this.audioCtx.resume();
+            }
+            this._userGestureHandled = true;
+            document.removeEventListener('click', resumeAudio);
+            document.removeEventListener('touchstart', resumeAudio);
+            document.removeEventListener('keydown', resumeAudio);
+        };
+        document.addEventListener('click', resumeAudio, { once: true, passive: true });
+        document.addEventListener('touchstart', resumeAudio, { once: true, passive: true });
+        document.addEventListener('keydown', resumeAudio, { once: true, passive: true });
+    }
+
+    _ensureAudioContext() {
+        if (!this.audioCtx) {
             this.audioCtx = new (window.AudioContext || window.webkitAudioContext)();
             
             this.masterGain = this.audioCtx.createGain();
@@ -34,47 +63,42 @@ export class AudioManager {
 
             this.musicGain = this.audioCtx.createGain();
             this.musicGain.connect(this.masterGain);
-
-            await this.loadSFX();
             
-            this.isInitialized = true;
-            console.log('AudioManager initialized');
-        } catch (e) {
-            console.warn('Web Audio API not available:', e);
+            // Apply pending settings
+            this.sfxGain.gain.value = this._pendingSfxEnabled ? 1 : 0;
+            this.musicGain.gain.value = this._pendingMusicEnabled ? 1 : 0;
+        }
+        if (this.audioCtx.state === 'suspended') {
+            this.audioCtx.resume();
         }
     }
 
     async loadSFX() {
         const sfxList = [
-            { key: 'arrow_out', file: 'sfx_arrow_out.wav', volume: CONFIG.VOLUME.SFX_ARROW_OUT },
-            { key: 'arrow_blocked', file: 'sfx_arrow_blocked.wav', volume: CONFIG.VOLUME.SFX_ARROW_BLOCKED },
-            { key: 'combo', file: 'sfx_combo.wav', volume: CONFIG.VOLUME.SFX_COMBO },
-            { key: 'level_complete', file: 'sfx_level_complete.wav', volume: CONFIG.VOLUME.SFX_LEVEL_COMPLETE },
-            { key: 'button_click', file: 'sfx_button_click.wav', volume: CONFIG.VOLUME.SFX_BUTTON_CLICK },
-            { key: 'reaction', file: 'sfx_reaction.wav', volume: CONFIG.VOLUME.SFX_REACTION },
-            { key: 'element_upgrade', file: 'sfx_element_upgrade.wav', volume: CONFIG.VOLUME.SFX_ELEMENT_UPGRADE },
-            { key: 'boss_warning', file: 'sfx_boss_warning.wav', volume: CONFIG.VOLUME.SFX_BOSS_WARNING },
-            { key: 'boss_defeat', file: 'sfx_boss_defeat.wav', volume: CONFIG.VOLUME.SFX_BOSS_DEFEAT },
-            { key: 'deadend', file: 'sfx_deadend.wav', volume: CONFIG.VOLUME.SFX_DEADEND },
-            { key: 'achievement', file: 'sfx_achievement.wav', volume: CONFIG.VOLUME.SFX_ACHIEVEMENT },
-            { key: 'combo_escalation', file: 'sfx_combo_escalation.wav', volume: CONFIG.VOLUME.SFX_COMBO_ESCALATION }
+            { key: 'arrow_out', volume: CONFIG.VOLUME.SFX_ARROW_OUT },
+            { key: 'arrow_blocked', volume: CONFIG.VOLUME.SFX_ARROW_BLOCKED },
+            { key: 'combo', volume: CONFIG.VOLUME.SFX_COMBO },
+            { key: 'level_complete', volume: CONFIG.VOLUME.SFX_LEVEL_COMPLETE },
+            { key: 'button_click', volume: CONFIG.VOLUME.SFX_BUTTON_CLICK },
+            { key: 'reaction', volume: CONFIG.VOLUME.SFX_REACTION },
+            { key: 'element_upgrade', volume: CONFIG.VOLUME.SFX_ELEMENT_UPGRADE },
+            { key: 'boss_warning', volume: CONFIG.VOLUME.SFX_BOSS_WARNING },
+            { key: 'boss_defeat', volume: CONFIG.VOLUME.SFX_BOSS_DEFEAT },
+            { key: 'deadend', volume: CONFIG.VOLUME.SFX_DEADEND },
+            { key: 'achievement', volume: CONFIG.VOLUME.SFX_ACHIEVEMENT },
+            { key: 'combo_escalation', volume: CONFIG.VOLUME.SFX_COMBO_ESCALATION }
         ];
 
+        // Store config for lazy creation
+        this._sfxConfigs = {};
         for (const sfx of sfxList) {
-            try {
-                const response = await fetch(`assets/sounds/${sfx.file}`);
-                if (response.ok) {
-                    const arrayBuffer = await response.arrayBuffer();
-                    this.sfxBuffers[sfx.key] = await this.audioCtx.decodeAudioData(arrayBuffer);
-                }
-            } catch (e) {
-                console.warn(`Failed to load SFX: ${sfx.file}`, e);
-                this.sfxBuffers[sfx.key] = this.createProceduralSFX(sfx.key);
-            }
+            this._sfxConfigs[sfx.key] = sfx;
         }
     }
 
     createProceduralSFX(type) {
+        // Create buffer lazily when audioCtx is available
+        this._ensureAudioContext();
         const sampleRate = this.audioCtx.sampleRate;
         let duration = 0.3, frequency = 440;
         
@@ -104,20 +128,30 @@ export class AudioManager {
         return buffer;
     }
 
+    _getSFXBuffer(key) {
+        if (!this.sfxBuffers[key] && this._sfxConfigs[key]) {
+            this.sfxBuffers[key] = this.createProceduralSFX(key);
+        }
+        return this.sfxBuffers[key];
+    }
+
     resume() {
+        this._ensureAudioContext();
         if (this.audioCtx && this.audioCtx.state === 'suspended') {
             this.audioCtx.resume();
         }
     }
 
     playSFX(key, options = {}) {
-        if (!this.sfxEnabled || !this.audioCtx || !this.sfxBuffers[key]) return;
+        this._ensureAudioContext();
+        const buffer = this._getSFXBuffer(key);
+        if (!this.sfxEnabled || !this.audioCtx || !buffer) return;
         
         const source = this.audioCtx.createBufferSource();
-        source.buffer = this.sfxBuffers[key];
+        source.buffer = buffer;
         
         const gain = this.audioCtx.createGain();
-        gain.gain.value = options.volume || 1;
+        gain.gain.value = (this._sfxConfigs[key]?.volume ?? 1) * (this.sfxEnabled ? 1 : 0);
         gain.connect(this.sfxGain);
         
         source.connect(gain);
@@ -134,19 +168,8 @@ export class AudioManager {
 async playMusic(key, loop = true) {
         if (!this.musicEnabled || !this.audioCtx) return;
         this.stopMusic();
-        try {
-            const response = await fetch(`assets/sounds/${key}.wav`);
-            if (response.ok) {
-                const arrayBuffer = await response.arrayBuffer();
-                const buffer = await this.audioCtx.decodeAudioData(arrayBuffer);
-                this.musicSource = this.audioCtx.createBufferSource();
-                this.musicSource.buffer = buffer;
-                this.musicSource.loop = loop;
-                this.musicSource.connect(this.musicGain);
-                this.musicSource.start(0);
-                this.currentMusic = key;
-            }
-        } catch (e) { console.warn('Failed to load music:', key, e); this.playProceduralMusic(key); }
+        // Use procedural music directly (no WAV files in build)
+        this.playProceduralMusic(key);
     }
 
     playProceduralMusic(type) {
@@ -162,8 +185,17 @@ async playMusic(key, loop = true) {
 
     stopMusic() { if (this.musicSource) { try { this.musicSource.stop(); } catch (e) {} this.musicSource = null; this.currentMusic = null; } }
 
-    setSFXEnabled(enabled) { this.sfxEnabled = enabled; this.sfxGain.gain.value = enabled ? 1 : 0; }
-    setMusicEnabled(enabled) { this.musicEnabled = enabled; this.musicGain.gain.value = enabled ? 1 : 0; if (!enabled) this.stopMusic(); }
+    setSFXEnabled(enabled) { 
+        this.sfxEnabled = enabled; 
+        this._pendingSfxEnabled = enabled;
+        if (this.sfxGain) this.sfxGain.gain.value = enabled ? 1 : 0; 
+    }
+    setMusicEnabled(enabled) { 
+        this.musicEnabled = enabled; 
+        this._pendingMusicEnabled = enabled;
+        if (this.musicGain) this.musicGain.gain.value = enabled ? 1 : 0; 
+        if (!enabled) this.stopMusic(); 
+    }
     setMasterVolume(volume) { if (this.masterGain) this.masterGain.gain.value = Math.max(0, Math.min(1, volume)); }
 
     playArrowOut(combo = 1) { const pitch = 1 + Math.min(combo * 0.05, 0.3); this.playSFXWithPitch('arrow_out', pitch); }

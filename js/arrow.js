@@ -195,6 +195,5 @@ export const ELEMENTS = {
 if (typeof window !== 'undefined') {
     window.Arrow = Arrow;
     window.DIRECTIONS = DIRECTIONS;
-    window.DIRECTION_ORDER = DIRECTION_ORDER;
     window.ELEMENTS = ELEMENTS;
 }

@@ -15,6 +15,7 @@ export class AdsManager {
         this.sessionStartTime = Date.now();
         this.levelsPlayedThisSession = 0;
         this.rewardedCallbacks = {};
+        this._gameplayStarted = false;
     }
 
     async init() {
@@ -94,8 +95,15 @@ export class AdsManager {
         } catch (e) { console.warn('Interstitial failed:', e); return false; }
     }
 
-    gameplayStart() { if (this.initialized) try { this.sdk.game.gameplayStart(); } catch (e) {} }
-    gameplayStop() { if (this.initialized) try { this.sdk.game.gameplayStop(); } catch (e) {} }
+    gameplayStart() { 
+        if (!this.initialized || this._gameplayStarted) return;
+        try { this.sdk.game.gameplayStart(); this._gameplayStarted = true; } catch (e) {} 
+    }
+    
+    gameplayStop() { 
+        if (!this.initialized) return;
+        try { this.sdk.game.gameplayStop(); this._gameplayStarted = false; } catch (e) {} 
+    }
     loadingStart() { if (this.initialized) try { this.sdk.game.loadingStart(); } catch (e) {} }
     loadingStop() { if (this.initialized) try { this.sdk.game.loadingStop(); } catch (e) {} }
     setMute(muted) { if (this.initialized) try { this.sdk.game.muteAudio(muted); } catch (e) {} }

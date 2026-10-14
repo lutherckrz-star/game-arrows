@@ -133,6 +133,15 @@ showLevelComplete(data) {
     showCombo(combo) { this.showToast(`${t('combo')}${combo}!`, 1000); }
 
     showDeadend() { this.showModal('deadend-modal'); }
+
+    showMainMenu() {
+        this.hideAllModals();
+        const mainMenu = document.getElementById('main-menu');
+        if (mainMenu) mainMenu.classList.remove('hidden');
+        this.updateHUD({ level: 1, score: 0, crystals: 0, time: 0 });
+        document.getElementById('game-header')?.classList.add('hidden');
+        document.getElementById('game-footer')?.classList.add('hidden');
+    }
 }
 
 export const ui = new UIManager();
