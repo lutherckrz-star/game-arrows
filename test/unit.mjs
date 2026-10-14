@@ -11,13 +11,17 @@ test('arrow bebas bisa keluar & grid dibersihkan', () => {
     const r = b.tryExitArrow(a);
     assert.strictEqual(r.success, true);
     assert.strictEqual(b.getArrow(1, 1), null);
+    // panah aktif hilang seketika; objek tetap ada di exitFx untuk animasi
     assert.strictEqual(b.arrows.length, 0);
+    assert.strictEqual(b.exitFx.length, 1);
+    assert.strictEqual(b.isEmpty(), true);
 });
 
 test('arrow terblokir gagal keluar', () => {
     const b = new Board(4);
-    b.placeArrow(3, 1, DIRECTIONS.UP);
-    const a = b.placeArrow(1, 1, DIRECTIONS.UP);
+    // panah di (0,1) UP menghalangi jalur panah di (3,1) UP
+    b.placeArrow(0, 1, DIRECTIONS.UP);
+    const a = b.placeArrow(3, 1, DIRECTIONS.UP);
     const r = b.tryExitArrow(a);
     assert.strictEqual(r.success, false);
     assert.strictEqual(b.arrows.length, 2);

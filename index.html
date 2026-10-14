@@ -311,6 +311,27 @@
         </div>
     </div>
 
+    <!-- Auto-update Service Worker: deteksi versi baru & pasang tanpa reload manual -->
+    <script>
+        if ('serviceWorker' in navigator) {
+            window.addEventListener('load', () => {
+                navigator.serviceWorker.register('./sw.js').then((reg) => {
+                    reg.addEventListener('updatefound', () => {
+                        const nw = reg.installing;
+                        if (!nw) return;
+                        nw.addEventListener('statechange', () => {
+                            if (nw.state === 'installed' && navigator.serviceWorker.controller) {
+                                nw.postMessage('skipWaiting');
+                            }
+                        });
+                    });
+                    // Sinkronkan SW yang terpasang saat ini dengan konten terbaru
+                    setInterval(() => reg.update().catch(() => {}), 60 * 60 * 1000);
+                }).catch(() => {});
+            });
+        }
+    </script>
+
     <!-- Scripts (entry point saja — modul lain di-import oleh game.js) -->
     <script type="module" src="js/game.js"></script>
 
