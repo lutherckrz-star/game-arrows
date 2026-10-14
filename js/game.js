@@ -79,7 +79,7 @@ export class Game {
         });
     }
 
-    async init() {
+async init() {
         console.log('Initializing Arrow Escape...');
         
         await audioManager.init();
@@ -91,7 +91,7 @@ export class Game {
         ui.init();
         particleSystem.init(this.canvas);
         
-this.loadGame();
+        this.loadGame();
         this.setupCanvas();
         this.setupInput();
         await this.loadAssets(); // Load assets with fallbacks
@@ -107,6 +107,9 @@ this.loadGame();
         if (!save || !save.firstSessionComplete) {
             this.isFirstSession = true;
             this.startLevel(1);
+        } else if (this.checkAutoResume()) {
+            // Show main menu first, then prompt auto-resume
+            setTimeout(() => this.promptAutoResume(), 500);
         }
         
         requestAnimationFrame(this.gameLoop.bind(this));
@@ -606,7 +609,7 @@ createLogoFallback(text) {
                 case 'h': case 'H': this.useHint(); break;
                 case 'Escape': this.pause(); break;
                 // Developer Mode keys
-                case 'k': case 'K': if (CONFIG.DEBUG_SKIP_LEVEL) this.skipLevel(); break;
+                case 'k': case 'K': if (CONFIG.DEBUG_SKIP_LEVEL) this.debugSkipLevel(); break;
                 case 'c': case 'C': if (CONFIG.DEBUG_ADD_CRYSTALS) { crystalManager.add(CONFIG.DEBUG_ADD_CRYSTALS, 'debug'); ui.showToast(`+${CONFIG.DEBUG_ADD_CRYSTALS} Crystals (Debug)`); } break;
             }
         } else if (this.state === 'paused' && e.key === 'Escape') this.resume();
@@ -794,9 +797,55 @@ drawElementIndicator(element, size) {
     }
 
     saveGame() {
-        const data = { version: CONFIG.SAVE_VERSION, checksum: '', currentLevel: this.currentLevel, totalScore: this.score, bestTimes: this.saveData.bestTimes || {}, starRatings: this.saveData.starRatings || {}, elementLevels: { FIRE: getElementLevel(ELEMENTS.FIRE), WATER: getElementLevel(ELEMENTS.WATER), ICE: getElementLevel(ELEMENTS.ICE), ELECTRIC: getElementLevel(ELEMENTS.ELECTRIC) }, crystals: crystalManager.crystals, unlockedModes: this.saveData.unlockedModes || ['campaign'], achievements: Array.from(achievementManager.unlocked), settings: settingsManager.getSaveData().settings, dailyStreak: this.saveData.dailyStreak || { lastPlayed: '', count: 0 }, totalReactionsTriggered: this.reactionsTriggered, totalPlaytime: this.totalPlayTime, firstSessionComplete: this.saveData.firstSessionComplete || false };
+        const data = { version: CONFIG.SAVE_VERSION, checksum: '', currentLevel: this.currentLevel, totalScore: this.score, bestTimes: this.saveData.bestTimes || {}, starRatings: this.saveData.starRatings || {}, elementLevels: { FIRE: getElementLevel(ELEMENTS.FIRE), WATER: getElementLevel(ELEMENTS.WATER), ICE: getElementLevel(ELEMENTS.ICE), ELECTRIC: getElementLevel(ELEMENTS.ELECTRIC) }, crystals: crystalManager.crystals, unlockedModes: this.saveData.unlockedModes || ['campaign'], achievements: Array.from(achievementManager.unlocked), settings: settingsManager.getSaveData().settings, dailyStreak: this.saveData.dailyStreak || { lastPlayed: '', count: 0 }, totalReactionsTriggered: this.reactionsTriggered, totalPlaytime: this.totalPlayTime, firstSessionComplete: this.saveData.firstSessionComplete || false, lastLevelState: this.lastLevelState, lastPlayTime: Date.now() };
         data.checksum = securityManager.calculateChecksum(data);
-        try { localStorage.setItem(CONFIG.SAVE_KEY, JSON.stringify(data)); } catch (e) { console.warn('Save failed:', e); }
+        try { localStorage.setItem(CONFIG.SAVE_KEY, JSON.stringify(data)); } catch (e) { if (e.name === 'QuotaExceededError') this.handleStorageFull(); else console.warn('Save failed:', e); }
+    }
+
+    handleStorageFull() {
+        try {
+            const analyticsData = localStorage.getItem('arrowEscape_analytics');
+            if (analyticsData) { localStorage.removeItem('arrowEscape_analytics'); }
+            this.saveGame();
+        } catch (e) {
+            if (window.ui) window.ui.showToast(t('storage_full') || 'Penyimpanan penuh!');
+        }
+    }
+
+    checkAutoResume() {
+        const data = this.saveData;
+        if (!data.lastPlayTime) return false;
+        const hoursSince = (Date.now() - data.lastPlayTime) / 3600000;
+        if (hoursSince < 24 && data.lastLevelState && data.currentLevel > 1) {
+            return true;
+        }
+        return false;
+    }
+
+    promptAutoResume() {
+        if (!this.checkAutoResume()) return false;
+        const data = this.saveData;
+        const msg = `${t('resume_level')} ${data.currentLevel}?`;
+        if (confirm(msg)) {
+            this.deserializeLevelState(data.lastLevelState);
+            this.startLevel(data.currentLevel);
+            return true;
+        }
+        return false;
+    }
+
+    confirmSkipLevel() {
+        const cost = CONFIG.REWARD_SKIP_COST;
+        if (!crystalManager.canAfford(cost)) {
+            ui.showToast(t('not_enough_crystals'));
+            return false;
+        }
+        const msg = t('confirm_skip', { level: this.currentLevel, cost });
+        if (confirm(msg)) {
+            crystalManager.skipLevel();
+            return true;
+        }
+        return false;
     }
 
     saveLevelState() { this.lastLevelState = this.serializeLevelState(); }
@@ -811,8 +860,17 @@ drawElementIndicator(element, size) {
     addRetry() { this.undoCount = Math.min(this.undoCount + 1, CONFIG.RETRY_FREE_COUNT); }
     resetGame() { localStorage.removeItem(CONFIG.SAVE_KEY); location.reload(); }
 
-    // Developer Mode: Skip Level
+    // Gameplay Skip Level (via crystals)
     skipLevel() {
+        if (this.currentLevel < CONFIG.CAMPAIGN_LEVELS) {
+            this.startLevel(this.currentLevel + 1);
+            ui.showToast(`${t('level')} ${this.currentLevel}`);
+            analytics.track('level_skipped', { level: this.currentLevel - 1 });
+        }
+    }
+
+    // Developer Mode: Skip Level (no cost)
+    debugSkipLevel() {
         if (this.currentLevel < CONFIG.CAMPAIGN_LEVELS) {
             this.startLevel(this.currentLevel + 1);
             ui.showToast('Level skipped (Debug)');
