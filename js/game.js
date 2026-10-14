@@ -303,7 +303,12 @@ setupInput() {
             if (boss) { const remaining = Math.max(0, boss.attackInterval - boss.attackTimer); ui.showBossTimer(remaining); }
         }
         if (this.trauma > 0) this.trauma = Math.max(0, this.trauma - CONFIG.TRAUMA_DECAY);
-createArrowFallback(primaryColor, secondaryColor) {
+        this.autoSaveTimer += dt;
+        if (this.autoSaveTimer >= CONFIG.AUTO_SAVE_INTERVAL / 1000) { this.saveLevelState(); this.autoSaveTimer = 0; }
+        this.totalPlayTime += dt; ui.updateHUD(this.getHUDData());
+    }
+
+    createArrowFallback(primaryColor, secondaryColor) {
         const canvas = document.createElement('canvas');
         const size = 32;
         canvas.width = size;
@@ -536,21 +541,6 @@ createLogoFallback(text) {
         return canvas;
     }
 
-    update(dt) {
-        if (this.state !== 'playing') return;
-        this.board.update(dt); particleSystem.update(dt);
-        if (this.isBossLevel && this.bossManager.isActive()) {
-            const bossDefeated = this.bossManager.update(dt, this.board);
-            if (bossDefeated) this.onBossDefeated();
-            const boss = this.bossManager.getBoss();
-            if (boss) { const remaining = Math.max(0, boss.attackInterval - boss.attackTimer); ui.showBossTimer(remaining); }
-        }
-        if (this.trauma > 0) this.trauma = Math.max(0, this.trauma - CONFIG.TRAUMA_DECAY);
-        this.autoSaveTimer += dt;
-        if (this.autoSaveTimer >= CONFIG.AUTO_SAVE_INTERVAL / 1000) { this.saveLevelState(); this.autoSaveTimer = 0; }
-        this.totalPlayTime += dt; ui.updateHUD(this.getHUDData());
-    }
-
     render() {
         this.ctx.save();
         if (this.trauma > 0) { const shake = this.trauma * this.trauma * CONFIG.MAX_SHAKE; this.ctx.translate((Math.random() - 0.5) * shake, (Math.random() - 0.5) * shake); }
@@ -619,7 +609,7 @@ createLogoFallback(text) {
             if (CONFIG.DEBUG_SKIP_LEVEL) {
                 ctx.fillRect(10, y, 150, 40);
                 ctx.fillStyle = '#fff';
-                ctx.font = \old \px system-ui\;
+                ctx.font = 'bold 14px system-ui';
                 ctx.fillText('Skip Level (K)', 20, y + 25);
                 y += 50;
             }
@@ -627,7 +617,7 @@ createLogoFallback(text) {
                 ctx.fillStyle = 'rgba(0, 255, 255, 0.9)';
                 ctx.fillRect(10, y, 150, 40);
                 ctx.fillStyle = '#000';
-                ctx.font = \old \px system-ui\;
+                ctx.font = 'bold 14px system-ui';
                 ctx.fillText(`+${CONFIG.DEBUG_ADD_CRYSTALS} Crystals (C)`, 20, y + 25);
             }
         }
@@ -760,7 +750,8 @@ createLogoFallback(text) {
     }
 
     onDeadend() { this.state = 'deadend'; audioManager.playSFX('deadend'); analytics.track('deadend_detected', { level: this.currentLevel }); ui.showDeadend(); this.announceDeadend(); }
-onLevelComplete() {
+
+    onLevelComplete() {
         this.state = 'level_complete';
         adsManager.gameplayStop();
         const timeTaken = performance.now() - this.levelStartTime;
@@ -844,7 +835,8 @@ onLevelComplete() {
         }
         switch (element) { case ELEMENTS.FIRE: return CONFIG.COLORS.FIRE; case ELEMENTS.WATER: return CONFIG.COLORS.WATER; case ELEMENTS.ICE: return CONFIG.COLORS.ICE; case ELEMENTS.ELECTRIC: return CONFIG.COLORS.ELECTRIC; default: return CONFIG.COLORS.PLAIN; } 
     }
-drawElementIndicator(element, size) {
+
+    drawElementIndicator(element, size) {
         const color = this.getElementColor(element); this.ctx.fillStyle = color;
         switch (element) {
             case ELEMENTS.FIRE: this.ctx.beginPath(); this.ctx.moveTo(0, -size * 0.2); this.ctx.bezierCurveTo(-size * 0.3, -size * 0.5, size * 0.3, -size * 0.5, 0, -size * 0.2); this.ctx.fill(); break;
@@ -863,7 +855,7 @@ drawElementIndicator(element, size) {
         const boss = this.bossManager.getBoss(); if (!boss) return;
         const centerX = this.canvas.width / this.dpr / 2; const centerY = this.boardOffsetY - 40;
         const pulse = Math.sin(performance.now() / 200) * 0.5 + 0.5;
-        this.ctx.fillStyle = `rgba(255, 71, 87, ${0.8 + pulse * 0.2})`; this.ctx.font = \old \px system-ui\; this.ctx.textAlign = 'center'; this.ctx.fillText('⚠ ' + boss.getWarningText() + ' ⚠', centerX, centerY);
+        this.ctx.fillStyle = `rgba(255, 71, 87, ${0.8 + pulse * 0.2})`; this.ctx.font = 'bold 20px system-ui'; this.ctx.textAlign = 'center'; this.ctx.fillText('⚠ ' + boss.getWarningText() + ' ⚠', centerX, centerY);
         this.ctx.strokeStyle = `rgba(255, 71, 87, ${0.5 + pulse * 0.5})`; this.ctx.lineWidth = 4; this.ctx.strokeRect(this.boardOffsetX - 4, this.boardOffsetY - 4, this.board.size * this.cellSize + 8, this.board.size * this.cellSize + 8);
     }
 // ========== SAVE/LOAD ==========
