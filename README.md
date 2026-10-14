@@ -1,3 +1,4 @@
+ HEAD
 # Arrow Escape — Elemental
 
 HTML5 puzzle game with elemental reactions, chain combos, and boss battles. Built for CrazyGames and Playgama.
@@ -168,3 +169,6 @@ MIT License - Free for commercial use.
 ---
 
 **Built with vanilla JS, zero dependencies, pure web standards.** 🎮
+
+# game-arrows
+ 2f9089176f055118c3e9dfd6d741fe092b6fac29
