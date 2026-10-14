@@ -57,9 +57,22 @@ export class SettingsManager {
             case 'colorblind': document.body.classList.toggle('colorblind', value); break;
             case 'reducedMotion': document.body.classList.toggle('reduced-motion', value); break;
             case 'language': i18n.setLang(value); break;
+            case 'anonymousMode': this.applyAnonymousMode(value); break;
         }
         const toggle = document.getElementById(`setting-${key}`);
         if (toggle) toggle.checked = value;
+    }
+
+    applyAnonymousMode(enabled) {
+        if (enabled) {
+            // Clear all localStorage except settings
+            const settings = localStorage.getItem('arrowEscape_settings');
+            localStorage.clear();
+            if (settings) localStorage.setItem('arrowEscape_settings', settings);
+            if (window.ui) window.ui.showToast('Anonymous mode: progress stored in memory only');
+        } else {
+            if (window.ui) window.ui.showToast('Anonymous mode disabled: progress will be saved');
+        }
     }
 bindEvents() {
         document.addEventListener('change', (e) => {

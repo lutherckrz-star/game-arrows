@@ -163,6 +163,9 @@ setupInput() {
             icon_flask: 'assets/images/icon_flask.png',
             icon_trophy: 'assets/images/icon_trophy.png',
             icon_play: 'assets/images/icon_play.png',
+            icon_endless: 'assets/images/icon_endless.png',
+            icon_192: 'assets/images/icon-192.png',
+            icon_512: 'assets/images/icon-512.png',
             logo_arrow_escape: 'assets/images/logo_arrow_escape.png',
             cover_16x9: 'assets/images/cover_16x9.png',
             cover_9x16: 'assets/images/cover_9x16.png',
@@ -209,6 +212,9 @@ setupInput() {
             icon_flask: () => this.createIconFallback('flask'),
             icon_trophy: () => this.createIconFallback('trophy'),
             icon_play: () => this.createIconFallback('play'),
+            icon_endless: () => this.createIconFallback('endless'),
+            icon_192: () => this.createPWAIconFallback(192),
+            icon_512: () => this.createPWAIconFallback(512),
             logo_arrow_escape: () => this.createLogoFallback('Arrow Escape'),
             cover_16x9: () => this.createCoverFallback(1920, 1080),
             cover_9x16: () => this.createCoverFallback(540, 960),
@@ -390,13 +396,13 @@ createLogoFallback(text) {
         ctx.fillStyle = glow;
         ctx.fillRect(0, 0, 512, 512);
         
-        ctx.font = 'bold 64px system-ui';
+        ctx.font = \old \px system-ui\;
         ctx.fillStyle = '#ff4757';
         ctx.textAlign = 'center';
         ctx.textBaseline = 'middle';
         ctx.fillText('Arrow Escape', 256, 240);
         
-        ctx.font = '24px system-ui';
+        ctx.font = \old \px system-ui\;
         ctx.fillStyle = '#feca57';
         ctx.fillText('Elemental', 256, 290);
         
@@ -422,13 +428,13 @@ createLogoFallback(text) {
         ctx.fillStyle = glow;
         ctx.fillRect(0, 0, width, height);
         
-        ctx.font = `bold ${Math.min(width, height) / 10}px system-ui`;
+        ctx.font = \old \px system-ui\;
         ctx.fillStyle = '#ff4757';
         ctx.textAlign = 'center';
         ctx.textBaseline = 'middle';
         ctx.fillText('Arrow Escape', width/2, height/2 - 30);
         
-        ctx.font = `${Math.min(width, height) / 20}px system-ui`;
+        ctx.font = \old \px system-ui\;
         ctx.fillStyle = '#feca57';
         ctx.fillText('Elemental', width/2, height/2 + 30);
         
@@ -466,7 +472,46 @@ createLogoFallback(text) {
                 ctx.closePath();
                 ctx.fill();
                 break;
+            case 'endless':
+                ctx.beginPath();
+                ctx.arc(12, 12, 8, 0, Math.PI * 2);
+                ctx.strokeStyle = '#ffffff';
+                ctx.lineWidth = 2;
+                ctx.stroke();
+                ctx.beginPath();
+                ctx.moveTo(12, 4);
+                ctx.lineTo(12, 20);
+                ctx.moveTo(4, 12);
+                ctx.lineTo(20, 12);
+                ctx.stroke();
+                break;
         }
+        
+        return canvas;
+    }
+
+    createPWAIconFallback(size) {
+        const canvas = document.createElement('canvas');
+        canvas.width = size;
+        canvas.height = size;
+        const ctx = canvas.getContext('2d');
+        
+        const gradient = ctx.createLinearGradient(0, 0, size, size);
+        gradient.addColorStop(0, '#1a1a2e');
+        gradient.addColorStop(1, '#16213e');
+        ctx.fillStyle = gradient;
+        ctx.fillRect(0, 0, size, size);
+        
+        ctx.beginPath();
+        ctx.arc(size/2, size/2, size/3, 0, Math.PI * 2);
+        ctx.strokeStyle = '#ff4757';
+        ctx.lineWidth = Math.max(2, size/64);
+        ctx.stroke();
+        
+        ctx.font = `bold ${size/4}px system-ui`;
+        ctx.textAlign = 'center';
+        ctx.textBaseline = 'middle';
+        ctx.fillText('→', size/2, size/2 + size/16);
         
         return canvas;
     }
@@ -543,7 +588,7 @@ createLogoFallback(text) {
             if (CONFIG.DEBUG_SKIP_LEVEL) {
                 ctx.fillRect(10, y, 150, 40);
                 ctx.fillStyle = '#fff';
-                ctx.font = 'bold 14px system-ui';
+                ctx.font = \old \px system-ui\;
                 ctx.fillText('Skip Level (K)', 20, y + 25);
                 y += 50;
             }
@@ -551,7 +596,7 @@ createLogoFallback(text) {
                 ctx.fillStyle = 'rgba(0, 255, 255, 0.9)';
                 ctx.fillRect(10, y, 150, 40);
                 ctx.fillStyle = '#000';
-                ctx.font = 'bold 14px system-ui';
+                ctx.font = \old \px system-ui\;
                 ctx.fillText(`+${CONFIG.DEBUG_ADD_CRYSTALS} Crystals (C)`, 20, y + 25);
             }
         }
@@ -659,11 +704,12 @@ createLogoFallback(text) {
         this.score += baseScore;
         this.combo++; this.maxCombo = Math.max(this.maxCombo, this.combo);
         audioManager.playArrowOut(this.combo);
-        if (this.combo % CONFIG.COMBO_THRESHOLD === 0) { this.score += CONFIG.SCORE_COMBO_BONUS; this.trauma += 0.2; audioManager.playCombo(this.combo); ui.showCombo(this.combo); }
+        if (this.combo % CONFIG.COMBO_THRESHOLD === 0) { this.score += CONFIG.SCORE_COMBO_BONUS; this.trauma += 0.2; audioManager.playCombo(this.combo); ui.showCombo(this.combo); this.announceCombo(this.combo); }
         if (this.combo >= CONFIG.COMBO_ESCALATION_THRESHOLD && this.combo % 5 === 0) audioManager.playSFX('combo_escalation');
+        this.announceArrowExit(arrow);
         const involvedArrows = [...blockers];
         const reactions = detectReactions(arrow, involvedArrows);
-        for (const reaction of reactions) { const affected = applyReaction(this.board, reaction); this.reactionsTriggered++; this.score += CONFIG.SCORE_REACTION_BONUS; this.trauma += 0.4; audioManager.playReaction(reaction.type); ui.showReaction(reaction.type); analytics.track('reaction_triggered', { type: reaction.type, level: this.currentLevel }); }
+        for (const reaction of reactions) { const affected = applyReaction(this.board, reaction); this.reactionsTriggered++; this.score += CONFIG.SCORE_REACTION_BONUS; this.trauma += 0.4; audioManager.playReaction(reaction.type); ui.showReaction(reaction.type); analytics.track('reaction_triggered', { type: reaction.type, level: this.currentLevel }); this.announceReaction(reaction.type); }
         
         // Auto-save after successful move
         this.saveGame();
@@ -682,7 +728,7 @@ createLogoFallback(text) {
         this.saveGame();
     }
 
-    onDeadend() { this.state = 'deadend'; audioManager.playSFX('deadend'); analytics.track('deadend_detected', { level: this.currentLevel }); ui.showDeadend(); }
+    onDeadend() { this.state = 'deadend'; audioManager.playSFX('deadend'); analytics.track('deadend_detected', { level: this.currentLevel }); ui.showDeadend(); this.announceDeadend(); }
 onLevelComplete() {
         this.state = 'level_complete';
         adsManager.gameplayStop();
@@ -714,6 +760,7 @@ onLevelComplete() {
         if (adsManager.canShowInterstitial()) adsManager.showInterstitial();
         audioManager.playLevelComplete();
         ui.showLevelComplete({ stars, score: this.score, crystals: crystalsEarned, time: timeTaken, noMistake, speedBonus });
+        this.announceLevelComplete(stars);
     }
 
     onBossDefeated() {
@@ -785,18 +832,20 @@ drawElementIndicator(element, size) {
         const boss = this.bossManager.getBoss(); if (!boss) return;
         const centerX = this.canvas.width / this.dpr / 2; const centerY = this.boardOffsetY - 40;
         const pulse = Math.sin(performance.now() / 200) * 0.5 + 0.5;
-        this.ctx.fillStyle = `rgba(255, 71, 87, ${0.8 + pulse * 0.2})`; this.ctx.font = 'bold 20px system-ui'; this.ctx.textAlign = 'center'; this.ctx.fillText('⚠ ' + boss.getWarningText() + ' ⚠', centerX, centerY);
+        this.ctx.fillStyle = `rgba(255, 71, 87, ${0.8 + pulse * 0.2})`; this.ctx.font = \old \px system-ui\; this.ctx.textAlign = 'center'; this.ctx.fillText('⚠ ' + boss.getWarningText() + ' ⚠', centerX, centerY);
         this.ctx.strokeStyle = `rgba(255, 71, 87, ${0.5 + pulse * 0.5})`; this.ctx.lineWidth = 4; this.ctx.strokeRect(this.boardOffsetX - 4, this.boardOffsetY - 4, this.board.size * this.cellSize + 8, this.board.size * this.cellSize + 8);
     }
 // ========== SAVE/LOAD ==========
     get saveData() { return JSON.parse(localStorage.getItem(CONFIG.SAVE_KEY) || '{}'); }
 
     loadGame() {
+        if (settingsManager.get('anonymousMode')) return;
         const data = this.saveData;
         if (data) { this.currentLevel = data.currentLevel || 1; this.score = data.totalScore || 0; this.totalPlayTime = data.totalPlaytime || 0; this.undoCount = data.undoCount || CONFIG.RETRY_FREE_COUNT; if (data.elementLevels) { Object.entries(data.elementLevels).forEach(([el, lvl]) => { while (getElementLevel(el) < lvl) upgradeElement(el); }); } crystalManager.load(data); achievementManager.load(data); analytics.load(); }
     }
 
     saveGame() {
+        if (settingsManager.get('anonymousMode')) return;
         const data = { version: CONFIG.SAVE_VERSION, checksum: '', currentLevel: this.currentLevel, totalScore: this.score, bestTimes: this.saveData.bestTimes || {}, starRatings: this.saveData.starRatings || {}, elementLevels: { FIRE: getElementLevel(ELEMENTS.FIRE), WATER: getElementLevel(ELEMENTS.WATER), ICE: getElementLevel(ELEMENTS.ICE), ELECTRIC: getElementLevel(ELEMENTS.ELECTRIC) }, crystals: crystalManager.crystals, unlockedModes: this.saveData.unlockedModes || ['campaign'], achievements: Array.from(achievementManager.unlocked), settings: settingsManager.getSaveData().settings, dailyStreak: this.saveData.dailyStreak || { lastPlayed: '', count: 0 }, totalReactionsTriggered: this.reactionsTriggered, totalPlaytime: this.totalPlayTime, firstSessionComplete: this.saveData.firstSessionComplete || false, lastLevelState: this.lastLevelState, lastPlayTime: Date.now() };
         data.checksum = securityManager.calculateChecksum(data);
         try { localStorage.setItem(CONFIG.SAVE_KEY, JSON.stringify(data)); } catch (e) { if (e.name === 'QuotaExceededError') this.handleStorageFull(); else console.warn('Save failed:', e); }
@@ -848,7 +897,7 @@ drawElementIndicator(element, size) {
         return false;
     }
 
-    saveLevelState() { this.lastLevelState = this.serializeLevelState(); }
+    saveLevelState() { if (settingsManager.get('anonymousMode')) return; this.lastLevelState = this.serializeLevelState(); }
 
     serializeLevelState() { return { board: this.board.serialize(), score: this.score, combo: this.combo, mistakes: this.mistakes, levelStartTime: this.levelStartTime, undoCount: this.undoCount, hintsUsed: this.hintsUsed, reactionsTriggered: this.reactionsTriggered }; }
 
@@ -905,6 +954,225 @@ drawElementIndicator(element, size) {
             ui.showToast('Image downloaded!');
         }
         analytics.track('share_clicked', { method: 'fallback' });
+    }
+
+    // ========== ACCESSIBILITY ==========
+    announce(message) {
+        const liveRegion = document.getElementById('toasts-container');
+        if (liveRegion) {
+            const announcement = document.createElement('div');
+            announcement.setAttribute('role', 'status');
+            announcement.setAttribute('aria-live', 'polite');
+            announcement.className = 'sr-only';
+            announcement.textContent = message;
+            liveRegion.appendChild(announcement);
+            setTimeout(() => announcement.remove(), 1000);
+        }
+    }
+
+    announceArrowExit(arrow) {
+        const elementNames = { FIRE: 'Fire', WATER: 'Water', ICE: 'Ice', ELECTRIC: 'Electric', PLAIN: 'Plain' };
+        this.announce(`${elementNames[arrow.element] || 'Arrow'} exited`);
+    }
+
+    announceCombo(combo) {
+        if (combo % CONFIG.COMBO_THRESHOLD === 0) {
+            this.announce(`Combo ${combo}`);
+        }
+    }
+
+    announceReaction(type) {
+        const names = { STEAM: 'Steam reaction', CONDUCTOR: 'Conductor reaction', DEEP_FREEZE: 'Deep freeze reaction', EXPLOSION: 'Explosion reaction' };
+        this.announce(names[type] || `Reaction: ${type}`);
+    }
+
+    announceLevelComplete(stars) {
+        this.announce(`Level complete. ${stars} stars earned`);
+    }
+
+    announceDeadend() {
+        this.announce('Dead end. No moves possible');
+    }
+
+    announceBossAttack(attack) {
+        this.announce(`Boss attack: ${attack}`);
+    }
+
+    // Focus management for modals
+    trapFocus(modal) {
+        const focusableElements = modal.querySelectorAll('button, [href], input, select, textarea, [tabindex]:not([tabindex="-1"])');
+        const firstElement = focusableElements[0];
+        const lastElement = focusableElements[focusableElements.length - 1];
+        
+        modal._focusTrap = (e) => {
+            if (e.key !== 'Tab') return;
+            if (e.shiftKey) {
+                if (document.activeElement === firstElement) {
+                    e.preventDefault();
+                    lastElement.focus();
+                }
+            } else {
+                if (document.activeElement === lastElement) {
+                    e.preventDefault();
+                    firstElement.focus();
+                }
+            }
+        };
+        modal.addEventListener('keydown', modal._focusTrap);
+        firstElement?.focus();
+    }
+
+    releaseFocus(modal) {
+        if (modal._focusTrap) {
+            modal.removeEventListener('keydown', modal._focusTrap);
+            delete modal._focusTrap;
+        }
+    }
+
+    startLevel(levelNum) {
+        this.mode = 'campaign';
+        this.currentLevel = levelNum;
+        this.isBossLevel = CONFIG.BOSS_LEVELS.includes(levelNum);
+        
+        const levelData = this.isBossLevel ? generateBossLevel(levelNum) : generateLevel(levelNum);
+        this.board = levelData;
+        this.levelData = levelData;
+        
+        this.score = 0;
+        this.combo = 0;
+        this.maxCombo = 0;
+        this.mistakes = 0;
+        this.levelStartTime = performance.now();
+        this.undoCount = CONFIG.RETRY_FREE_COUNT;
+        this.hintsUsed = 0;
+        this.reactionsTriggered = 0;
+        this.undoStack = [];
+        this.trauma = 0;
+        this.hitStopTimer = 0;
+        
+        if (this.isBossLevel) {
+            this.bossManager.spawnBoss(levelNum);
+        }
+        
+        this.state = 'playing';
+        this.saveLevelState();
+        
+        ui.hideAllModals();
+        document.getElementById('game-header').classList.remove('hidden');
+        document.getElementById('game-footer').classList.remove('hidden');
+        ui.updateHUD(this.getHUDData());
+        
+        if (this.isBossLevel) {
+            audioManager.switchToBossMusic();
+        } else {
+            audioManager.switchToAmbientMusic();
+        }
+        
+        adsManager.gameplayStart();
+        analytics.track('level_start', { level: levelNum, mode: this.mode });
+    }
+
+    startMode(mode) {
+        this.mode = mode;
+        
+        switch (mode) {
+            case 'endless':
+                this.currentLevel = 999;
+                this.board = generateEndlessLevel();
+                break;
+            case 'daily':
+                this.currentLevel = 0;
+                this.board = generateDailyChallenge();
+                break;
+            case 'boss_rush':
+                this.currentLevel = -1;
+                this.board = generateBossLevel(10); // Start with first boss
+                break;
+            default:
+                this.currentLevel = 1;
+                this.board = generateLevel(1);
+        }
+        
+        this.isBossLevel = mode === 'boss_rush' || mode === 'daily'; // Daily can have elements
+        
+        this.score = 0;
+        this.combo = 0;
+        this.maxCombo = 0;
+        this.mistakes = 0;
+        this.levelStartTime = performance.now();
+        this.undoCount = mode === 'endless' ? 0 : CONFIG.RETRY_FREE_COUNT;
+        this.hintsUsed = 0;
+        this.reactionsTriggered = 0;
+        this.undoStack = [];
+        this.trauma = 0;
+        this.hitStopTimer = 0;
+        
+        if (mode === 'boss_rush') {
+            this.bossManager.spawnBoss(10);
+        }
+        
+        this.state = 'playing';
+        this.saveLevelState();
+        
+        ui.hideAllModals();
+        document.getElementById('game-header').classList.remove('hidden');
+        document.getElementById('game-footer').classList.remove('hidden');
+        ui.updateHUD(this.getHUDData());
+        
+        if (this.isBossLevel) {
+            audioManager.switchToBossMusic();
+        } else {
+            audioManager.switchToAmbientMusic();
+        }
+        
+        adsManager.gameplayStart();
+        analytics.track('level_start', { level: this.currentLevel, mode });
+    }
+
+    restartLevel() {
+        if (this.mode === 'campaign') {
+            this.startLevel(this.currentLevel);
+        } else {
+            this.startMode(this.mode);
+        }
+    }
+
+    quitToMenu() {
+        this.state = 'menu';
+        adsManager.gameplayStop();
+        audioManager.stopMusic();
+        ui.showMainMenu();
+    }
+
+    pause() {
+        if (this.state === 'playing') {
+            this.state = 'paused';
+            adsManager.gameplayStop();
+            audioManager.stopMusic();
+            ui.showModal('pause-menu');
+        }
+    }
+
+    resume() {
+        if (this.state === 'paused') {
+            this.state = 'playing';
+            audioManager.switchToAmbientMusic();
+            adsManager.gameplayStart();
+            ui.hideAllModals();
+        }
+    }
+
+    reviveBoss() {
+        if (this.isBossLevel && this.bossManager.getBoss()) {
+            const boss = this.bossManager.getBoss();
+            boss.hp = boss.maxHp;
+            boss.defeated = false;
+            this.bossManager.active = true;
+            this.state = 'playing';
+            ui.hideAllModals();
+            audioManager.switchToBossMusic();
+            adsManager.gameplayStart();
+        }
     }
 }
 

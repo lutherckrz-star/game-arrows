@@ -62,11 +62,11 @@ export class UIManager {
     showModal(modalId) {
         this.hideAllModals();
         const modal = document.getElementById(modalId);
-        if (modal) { modal.classList.remove('hidden'); this.currentModal = modalId; this.renderModalContent(modalId); const btn = modal.querySelector('button'); if (btn) btn.focus(); }
+        if (modal) { modal.classList.remove('hidden'); this.currentModal = modalId; this.renderModalContent(modalId); const btn = modal.querySelector('button'); if (btn) btn.focus(); if (window.game && window.game.trapFocus) window.game.trapFocus(modal); }
     }
 
-    hideModal(modalId) { const modal = document.getElementById(modalId); if (modal) modal.classList.add('hidden'); if (this.currentModal === modalId) this.currentModal = null; }
-    hideAllModals() { document.querySelectorAll('#modals-container > .modal').forEach(m => m.classList.add('hidden')); this.currentModal = null; }
+    hideModal(modalId) { const modal = document.getElementById(modalId); if (modal) modal.classList.add('hidden'); if (window.game && window.game.releaseFocus) window.game.releaseFocus(modal); if (this.currentModal === modalId) this.currentModal = null; }
+    hideAllModals() { document.querySelectorAll('#modals-container > .modal').forEach(m => { if (window.game && window.game.releaseFocus) window.game.releaseFocus(m); m.classList.add('hidden'); }); this.currentModal = null; }
     closeTopModal() { if (this.currentModal) this.hideModal(this.currentModal); }
     renderModalContent(modalId) { i18n.applyLanguage(); }
 showLevelComplete(data) {

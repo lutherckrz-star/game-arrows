@@ -24,13 +24,13 @@
   "categories": ["games", "entertainment"],
   "screenshots": [
     {
-      "src": "platform/cover_16x9.png",
+      "src": "assets/images/cover_16x9.png",
       "sizes": "1920x1080",
       "type": "image/png",
       "form_factor": "wide"
     },
     {
-      "src": "platform/cover_9x16.png",
+      "src": "assets/images/cover_9x16.png",
       "sizes": "540x960",
       "type": "image/png",
       "form_factor": "narrow"
