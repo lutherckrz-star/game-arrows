@@ -1,0 +1,18 @@
+Arrow Escape — Elemental
+
+A puzzle game where you tap arrows to clear the board. Combine elements to trigger chain reactions: Steam, Conductor, Deep Freeze, Explosion. Upgrade elements, defeat bosses, earn crystals.
+
+Features:
+- 50 campaign levels with progressive difficulty
+- 4 elements (Fire, Water, Ice, Electric) with 3 upgrade tiers
+- 4 chain reactions: Steam, Conductor, Deep Freeze, Explosion
+- Boss battles every 10 levels
+- Endless, Daily Challenge, Boss Rush modes
+- Crystal economy for upgrades and rewards
+- 10 achievements
+- Daily rewards
+- Full PWA support (offline, installable)
+
+Target: PEGI 12
+Monetization: CrazyGames SDK v3 Rewarded Video + Interstitial
+Platforms: CrazyGames, Playgama

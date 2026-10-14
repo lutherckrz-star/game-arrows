@@ -1,0 +1,29 @@
+Cara Bermain:
+1. Sentuh panah untuk meluncurkannya ke arahnya
+2. Panah hanya bergerak jika jalannya bebas (tidak ada panah lain menghalangi)
+3. Hapus semua panah untuk menyelesaikan level
+
+Elemen:
+- API: Menghancurkan 1 panah Es di jalurnya
+- AIR: Melewati 1 penghalang
+- ES: Membekukan panah sekitar selama 1 detik
+- LISTRIK: Menyambar semua panah LISTRIK di baris/kolom yang sama
+
+Reaksi Berantai:
+- API + ES = UAP (membersihkan 2 sel sekitar)
+- AIR + LISTRIK = KONDUKTOR (menyambar 3 LISTRIK sekitar)
+- ES + AIR = BEKU TOTAL (membekukan seluruh baris & kolom)
+- LISTRIK + API = LEDAKAN (menghancurkan 1 penghalang sekitar)
+
+Kontrol:
+- Sentuh/Klik: Pilih dan luncurkan panah
+- U: Undo (terbatas)
+- H: Petunjuk (menunjukkan panah yang bisa digerakkan)
+- ESC: Jeda
+
+Pertarungan Bos: Setiap 10 level. Perhatikan kilatan peringatan!
+
+Progresi:
+- Dapatkan kristal: Tanpa kesalahan +1, Bonus kecepatan +1, Harian +5
+- Upgrade elemen (10 kristal per level)
+- Buka mode: Tanpa Akhir (L50), Harian (L10), Boss Rush (L50)

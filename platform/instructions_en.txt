@@ -1,0 +1,29 @@
+How to Play:
+1. Tap an arrow to launch it in its direction
+2. Arrow only moves if path is clear (no other arrows blocking)
+3. Clear all arrows to complete the level
+
+Elements:
+- FIRE: Destroys 1 Ice arrow in its path
+- WATER: Passes through 1 blocker
+- ICE: Freezes adjacent arrows for 1 second
+- ELECTRIC: Zaps all Electric arrows in same row/column
+
+Chain Reactions:
+- FIRE + ICE = STEAM (clears 2 nearby cells)
+- WATER + ELECTRIC = CONDUCTOR (zaps 3 nearby Electrics)
+- ICE + WATER = DEEP FREEZE (freezes entire row & column)
+- ELECTRIC + FIRE = EXPLOSION (destroys 1 nearby blocker)
+
+Controls:
+- Tap/Click: Select and launch arrow
+- U: Undo (limited)
+- H: Hint (shows movable arrow)
+- ESC: Pause
+
+Boss Battles: Every 10 levels. Watch for warning glow!
+
+Progression:
+- Earn crystals: No mistakes +1, Speed bonus +1, Daily +5
+- Upgrade elements (10 crystals per level)
+- Unlock modes: Endless (L50), Daily (L10), Boss Rush (L50)

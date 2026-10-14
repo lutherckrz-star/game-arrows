@@ -1,0 +1,383 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
+    <meta name="theme-color" content="#1a1a2e">
+    <meta name="description" content="Arrow Escape Elemental - Puzzle game with elemental reactions">
+    <title>Arrow Escape — Elemental</title>
+    <link rel="manifest" href="manifest.json">
+    <link rel="icon" href="favicon.ico">
+    <link rel="apple-touch-icon" href="assets/images/icon-192.png">
+    <link rel="stylesheet" href="style.css">
+</head>
+<body>
+    <div id="game-container">
+        <!-- Loading Overlay -->
+        <div id="loading-overlay" class="hidden">
+            <div class="spinner"></div>
+            <span id="loading-text" data-i18n="loading">Memuat...</span>
+        </div>
+
+        <!-- Main Canvas -->
+        <canvas id="game-canvas" tabindex="0" aria-label="Arrow Escape game board"></canvas>
+
+        <!-- Header UI -->
+        <header id="game-header" class="hidden">
+            <div class="header-left">
+                <span id="level-display" data-i18n-prefix="level">Level 1</span>
+                <span id="score-display" data-i18n-prefix="score">Score: 0</span>
+            </div>
+            <div class="header-center">
+                <div id="timer-display" class="timer">00:00</div>
+                <div id="boss-timer" class="hidden">Boss: 05:00</div>
+            </div>
+            <div class="header-right">
+                <button id="crystal-btn" class="icon-btn" aria-label="Kristal: 0">
+                    <img src="assets/images/icon_crystal.png" alt="" class="icon">
+                    <span id="crystal-count">0</span>
+                </button>
+                <button id="pause-btn" class="icon-btn" aria-label="Pause">
+                    <img src="assets/images/icon_pause.png" alt="" class="icon">
+                </button>
+            </div>
+        </header>
+
+        <!-- Footer Controls -->
+        <footer id="game-footer" class="hidden">
+            <button id="undo-btn" class="control-btn" aria-label="Undo (U)">
+                <img src="assets/images/icon_undo.png" alt="" class="icon">
+            </button>
+            <button id="hint-btn" class="control-btn" aria-label="Hint (H)">
+                <img src="assets/images/icon_hint.png" alt="" class="icon">
+            </button>
+            <button id="share-btn" class="control-btn" aria-label="Share">
+                <img src="assets/images/icon_share.png" alt="" class="icon">
+            </button>
+        </footer>
+
+        <!-- Modals Container -->
+        <div id="modals-container">
+
+<!-- Main Menu -->
+            <div id="main-menu" class="modal">
+                <div class="modal-content">
+                    <h1 data-i18n="play">Play</h1>
+                    <div class="menu-buttons">
+                        <button id="btn-continue" class="menu-btn primary" data-i18n="play"></button>
+                        <button id="btn-level-select" class="menu-btn" data-i18n="level_select"></button>
+                        <button id="btn-modes" class="menu-btn" data-i18n="modes"></button>
+                        <button id="btn-element-lab" class="menu-btn" data-i18n="element_lab"></button>
+                        <button id="btn-achievements" class="menu-btn" data-i18n="achievements"></button>
+                        <button id="btn-settings" class="menu-btn icon-btn" aria-label="Settings">
+                            <img src="assets/images/icon_settings.png" alt="" class="icon">
+                        </button>
+                    </div>
+                    <div class="menu-info">
+                        <span id="menu-crystals" class="crystal-display">💎 0</span>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Level Select -->
+            <div id="level-select" class="modal hidden">
+                <div class="modal-content">
+                    <header class="modal-header">
+                        <h2 data-i18n="level_select">Levels</h2>
+                        <button id="btn-level-back" class="icon-btn" aria-label="Back">
+                            <img src="assets/images/icon_undo.png" alt="" class="icon">
+                        </button>
+                    </header>
+                    <div id="level-grid" class="level-grid"></div>
+                </div>
+            </div>
+
+            <!-- Mode Select -->
+            <div id="mode-select" class="modal hidden">
+                <div class="modal-content">
+                    <header class="modal-header">
+                        <h2 data-i18n="modes">Modes</h2>
+                        <button id="btn-mode-back" class="icon-btn" aria-label="Back">
+                            <img src="assets/images/icon_undo.png" alt="" class="icon">
+                        </button>
+                    </header>
+                    <div class="mode-grid">
+                        <div class="mode-card" data-mode="campaign">
+                            <h3 data-i18n="play">Campaign</h3>
+                            <p>50 levels with elemental progression</p>
+                        </div>
+                        <div class="mode-card" data-mode="endless" id="mode-endless">
+                            <h3 data-i18n="endless">Endless</h3>
+                            <p data-i18n="unlock_endless">Unlocks after Level 50</p>
+                        </div>
+                        <div class="mode-card" data-mode="daily" id="mode-daily">
+                            <h3 data-i18n="daily_challenge">Daily Challenge</h3>
+                            <p data-i18n="unlock_daily">Unlocks after Level 10</p>
+                        </div>
+                        <div class="mode-card" data-mode="boss_rush" id="mode-boss-rush">
+<!-- Level Complete Modal -->
+            <div id="level-complete-modal" class="modal hidden">
+                <div class="modal-content">
+                    <h2 data-i18n="level_complete">Level Complete!</h2>
+                    <div class="stars" style="font-size: 2rem; margin: var(--spacing-md) 0;"></div>
+                    <div class="score" style="font-size: 1.2rem; margin: var(--spacing-sm) 0;"></div>
+                    <div class="crystals" style="color: var(--crystal); font-weight: 700; margin: var(--spacing-sm) 0;"></div>
+                    <div class="time" style="color: var(--text-dim); margin: var(--spacing-sm) 0;"></div>
+                    <div class="no-mistake" style="color: var(--gold); margin: var(--spacing-sm) 0;"></div>
+                    <div class="speed-bonus" style="color: var(--gold); margin: var(--spacing-sm) 0;"></div>
+                    <div class="menu-buttons" style="margin-top: var(--spacing-lg);">
+                        <button id="btn-next-level" class="menu-btn primary" data-i18n="next_level"></button>
+                        <button id="btn-level-complete-menu" class="menu-btn" data-i18n="back_to_menu"></button>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Level Failed Modal -->
+            <div id="level-failed-modal" class="modal hidden">
+                <div class="modal-content">
+                    <h2 data-i18n="level_failed">Level Failed</h2>
+                    <p style="text-align: center; margin: var(--spacing-md) 0; color: var(--text-dim);" data-i18n="deadend">Dead End!</p>
+                    <div class="menu-buttons">
+                        <button id="btn-retry-free" class="menu-btn primary" data-i18n="retry"></button>
+                        <button id="btn-retry-ad" class="menu-btn" data-i18n="watch_ad"></button>
+                        <button id="btn-failed-menu" class="menu-btn" data-i18n="back_to_menu"></button>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Deadend Modal -->
+            <div id="deadend-modal" class="modal hidden">
+                <div class="modal-content">
+                    <h2 data-i18n="deadend">Dead End!</h2>
+                    <p style="text-align: center; margin: var(--spacing-md) 0; color: var(--text-dim);">No more moves possible!</p>
+                    <div class="menu-buttons">
+                        <button id="btn-deadend-undo" class="menu-btn primary" data-i18n="undo"></button>
+                        <button id="btn-deadend-restart" class="menu-btn" data-i18n="restart"></button>
+                        <button id="btn-deadend-menu" class="menu-btn" data-i18n="back_to_menu"></button>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Element Lab Modal -->
+            <div id="element-lab-modal" class="modal hidden">
+                <div class="modal-content">
+                    <header class="modal-header">
+                        <h2 data-i18n="element_lab_title">Element Lab</h2>
+                        <button id="btn-lab-back" class="icon-btn" aria-label="Back">
+                            <img src="assets/images/icon_undo.png" alt="" class="icon">
+                        </button>
+                    </header>
+                    <div class="tab-buttons" style="display: flex; gap: var(--spacing-sm); margin-bottom: var(--spacing-md);">
+                        <button id="tab-upgrades" class="menu-btn primary" style="flex: 1;" data-i18n="upgrade">Upgrades</button>
+                        <button id="tab-encyclopedia" class="menu-btn" style="flex: 1;" data-i18n="encyclopedia">Encyclopedia</button>
+                    </div>
+                    <div id="element-lab-content"></div>
+                </div>
+            </div>
+                            <h3 data-i18n="boss_rush">Boss Rush</h3>
+                            <p data-i18n="unlock_boss_rush">Unlocks after Final Boss</p>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Pause Menu -->
+            <div id="pause-menu" class="modal hidden">
+                <div class="modal-content">
+                    <h2 data-i18n="pause">Paused</h2>
+                    <div class="menu-buttons">
+                        <button id="btn-resume" class="menu-btn primary" data-i18n="resume"></button>
+<!-- Achievements Modal -->
+            <div id="achievements-modal" class="modal hidden">
+                <div class="modal-content">
+                    <header class="modal-header">
+                        <h2 data-i18n="achievements">Achievements</h2>
+                        <button id="btn-achievements-back" class="icon-btn" aria-label="Back">
+                            <img src="assets/images/icon_undo.png" alt="" class="icon">
+                        </button>
+                    </header>
+                    <div id="achievements-list" style="max-height: 60vh; overflow-y: auto;"></div>
+                </div>
+            </div>
+
+            <!-- Settings Modal -->
+            <div id="settings-modal" class="modal hidden">
+                <div class="modal-content">
+                    <header class="modal-header">
+                        <h2 data-i18n="settings">Settings</h2>
+                        <button id="btn-settings-back" class="icon-btn" aria-label="Back">
+                            <img src="assets/images/icon_undo.png" alt="" class="icon">
+                        </button>
+                    </header>
+                    
+                    <div class="settings-section">
+                        <h3>Audio</h3>
+                        <div class="setting-row">
+                            <div>
+                                <div class="setting-label" data-i18n="sound">Sound</div>
+                            </div>
+                            <input type="checkbox" id="setting-sound" data-setting="sound" checked>
+<!-- Toasts Container -->
+        <div id="toasts-container" aria-live="polite"></div>
+
+        <!-- Landscape Warning -->
+        <div id="landscape-warning" class="hidden" role="alert">
+            <div class="landscape-content">
+                <span class="rotate-icon">📱</span>
+                <p data-i18n="rotate_device">Putar kembali ke portrait untuk bermain</p>
+            </div>
+        </div>
+    </div>
+
+    <!-- Scripts -->
+    <script src="js/config.js"></script>
+    <script src="js/i18n.js"></script>
+    <script src="js/arrow.js"></script>
+    <script src="js/element.js"></script>
+    <script src="js/board.js"></script>
+    <script src="js/level.js"></script>
+    <script src="js/boss.js"></script>
+    <script src="js/crystal.js"></script>
+    <script src="js/achievement.js"></script>
+    <script src="js/menu.js"></script>
+    <script src="js/settings.js"></script>
+    <script src="js/audio.js"></script>
+    <script src="js/ads.js"></script>
+    <script src="js/analytics.js"></script>
+    <script src="js/security.js"></script>
+    <script src="js/particles.js"></script>
+    <script src="js/ui.js"></script>
+    <script src="js/game.js"></script>
+
+    <!-- CrazyGames SDK v3 -->
+    <script src="https://sdk.crazygames.com/crazygames-sdk-v3.js"></script>
+    <script>
+        document.addEventListener('DOMContentLoaded', async () => {
+            const game = new Game();
+            window.game = game;
+            await game.init();
+        });
+    </script>
+</body>
+</html>
+                        </div>
+                        <div class="setting-row">
+                            <div>
+                                <div class="setting-label" data-i18n="music">Music</div>
+                            </div>
+                            <input type="checkbox" id="setting-music" data-setting="music" checked>
+                        </div>
+                    </div>
+
+                    <div class="settings-section">
+                        <h3>Gameplay</h3>
+                        <div class="setting-row">
+                            <div>
+                                <div class="setting-label" data-i18n="vibration">Vibration</div>
+                            </div>
+                            <input type="checkbox" id="setting-vibration" data-setting="vibration" checked>
+                        </div>
+                    </div>
+
+                    <div class="settings-section">
+                        <h3>Accessibility</h3>
+                        <div class="setting-row">
+                            <div>
+                                <div class="setting-label" data-i18n="colorblind">Colorblind Mode</div>
+                            </div>
+                            <input type="checkbox" id="setting-colorblind" data-setting="colorblind">
+                        </div>
+                        <div class="setting-row">
+                            <div>
+                                <div class="setting-label" data-i18n="reduced_motion">Reduced Motion</div>
+                            </div>
+                            <input type="checkbox" id="setting-reduced-motion" data-setting="reducedMotion">
+                        </div>
+                    </div>
+
+                    <div class="settings-section">
+                        <h3>Language</h3>
+                        <div class="setting-row">
+                            <div>
+                                <div class="setting-label" data-i18n="language">Language</div>
+                            </div>
+                            <select id="setting-language">
+                                <option value="en" data-i18n="english">English</option>
+                                <option value="id" data-i18n="indonesian">Indonesian</option>
+                            </select>
+                        </div>
+                    </div>
+
+                    <div class="settings-section">
+                        <h3>Data</h3>
+                        <div class="setting-actions">
+                            <button id="btn-export-save" class="menu-btn" data-i18n="export_save"></button>
+                            <button id="btn-import-save" class="menu-btn" data-i18n="import_save"></button>
+                            <button id="btn-reset-progress" class="menu-btn danger" data-i18n="reset_progress"></button>
+                            <button id="btn-delete-data" class="menu-btn danger" data-i18n="delete_data"></button>
+                        </div>
+                    </div>
+
+                    <div class="settings-section">
+                        <h3>Other</h3>
+                        <div class="setting-row">
+                            <button id="btn-tutorial-replay" class="menu-btn" data-i18n="tutorial_replay"></button>
+                        </div>
+                        <div class="setting-row">
+                            <button id="btn-install-game" class="menu-btn" data-i18n="install_game"></button>
+                        </div>
+                        <div class="setting-row">
+                            <a href="#" id="privacy-policy-link" data-i18n="privacy_policy" style="color: var(--fire); text-decoration: none;"></a>
+                        </div>
+                        <div class="setting-row">
+                            <span class="setting-label" data-i18n="version">Version</span>
+                            <span id="version-display" style="color: var(--text-dim);">1.0.0</span>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Toasts Container -->
+        <div id="toasts-container" aria-live="polite"></div>
+
+        <!-- Landscape Warning -->
+        <div id="landscape-warning" class="hidden" role="alert">
+            <div class="landscape-content">
+                <span class="rotate-icon">📱</span>
+                <p data-i18n="rotate_device">Putar kembali ke portrait untuk bermain</p>
+            </div>
+        </div>
+    </div>
+
+    <!-- Scripts -->
+    <script src="js/config.js"></script>
+    <script src="js/i18n.js"></script>
+    <script src="js/arrow.js"></script>
+    <script src="js/element.js"></script>
+    <script src="js/board.js"></script>
+    <script src="js/level.js"></script>
+    <script src="js/boss.js"></script>
+    <script src="js/crystal.js"></script>
+    <script src="js/achievement.js"></script>
+    <script src="js/menu.js"></script>
+    <script src="js/settings.js"></script>
+    <script src="js/audio.js"></script>
+    <script src="js/ads.js"></script>
+    <script src="js/analytics.js"></script>
+    <script src="js/security.js"></script>
+    <script src="js/particles.js"></script>
+    <script src="js/ui.js"></script>
+    <script src="js/game.js"></script>
+
+    <!-- CrazyGames SDK v3 -->
+    <script src="https://sdk.crazygames.com/crazygames-sdk-v3.js"></script>
+    <script>
+        document.addEventListener('DOMContentLoaded', async () => {
+            const game = new Game();
+            window.game = game;
+            await game.init();
+        });
+    </script>
+</body>
+</html>

@@ -1,0 +1,18 @@
+Arrow Escape — Elemental
+
+Sebuah game puzzle di mana Anda mengetuk panah untuk mengosongkan papan. Kombinasikan elemen untuk memicu reaksi berantai: Uap, Konduktor, Beku Total, Ledakan. Tingkatkan elemen, kalahkan bos, kumpulkan kristal.
+
+Fitur:
+- 50 level kampanye dengan kesulitan progresif
+- 4 elemen (Api, Air, Es, Listrik) dengan 3 tingkat upgrade
+- 4 reaksi berantai: Uap, Konduktor, Beku Total, Ledakan
+- Pertarungan bos setiap 10 level
+- Mode Tanpa Akhir, Tantangan Harian, Boss Rush
+- Ekonomi kristal untuk upgrade dan hadiah
+- 10 prestasi
+- Hadiah harian
+- Dukungan PWA penuh (offline, installable, fullscreen)
+
+Target: PEGI 12
+Monetisasi: CrazyGames SDK v3 Rewarded Video + Interstitial
+Platform: CrazyGames, Playgama
