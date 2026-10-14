@@ -191,8 +191,13 @@ export function generateBossLevel(levelNum) {
     const board = new Board(CONFIG.BOSS_GRID_SIZE);
     const bossType = getBossType(levelNum);
     
-    const config = getLevelConfig(levelNum);
-    generateBoardReverseSolve(config);
+    const config = { ...getLevelConfig(levelNum), size: CONFIG.BOSS_GRID_SIZE };
+    const generatedBoard = generateBoardReverseSolve(config);
+    
+    // Copy generated arrows to the boss board
+    for (const arrow of generatedBoard.getActiveArrows()) {
+        board.placeArrow(arrow.row, arrow.col, arrow.direction, arrow.element);
+    }
     
     addBossArrows(board, bossType);
     assignElements(board, levelNum);

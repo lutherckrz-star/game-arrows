@@ -128,12 +128,24 @@ async init() {
     resizeCanvas() {
         const container = this.canvas.parentElement;
         const rect = container.getBoundingClientRect();
-resizeCanvas() {
-        const container = this.canvas.parentElement;
-        const rect = container.getBoundingClientRect();
+        const maxWidth = Math.min(rect.width, 500);
+        const maxHeight = rect.height * 0.7;
         
-        setupInput() {
-setupInput() {
+        this.canvas.style.width = maxWidth + 'px';
+        this.canvas.style.height = maxHeight + 'px';
+        
+        this.canvas.width = maxWidth * this.dpr;
+        this.canvas.height = maxHeight * this.dpr;
+        this.ctx.setTransform(1, 0, 0, 1, 0, 0);
+        this.ctx.scale(this.dpr, this.dpr);
+        
+        const boardSize = Math.min(maxWidth, maxHeight * 0.9);
+        this.cellSize = boardSize / (this.board?.size || 4);
+        this.boardOffsetX = (maxWidth - boardSize) / 2;
+        this.boardOffsetY = (maxHeight - boardSize) / 2 + 20;
+    }
+
+    setupInput() {
         this.canvas.addEventListener('click', (e) => this.handleClick(e));
         this.canvas.addEventListener('mousemove', (e) => this.handleMouseMove(e));
         this.canvas.addEventListener('touchstart', (e) => this.handleTouchStart(e), { passive: false });
@@ -141,6 +153,14 @@ setupInput() {
         document.addEventListener('keydown', (e) => this.handleKeyDown(e));
         document.addEventListener('keyup', (e) => this.keysPressed.delete(e.key));
         this.canvas.addEventListener('contextmenu', (e) => e.preventDefault());
+        
+        // Footer buttons
+        const undoBtn = document.getElementById('undo-btn');
+        const hintBtn = document.getElementById('hint-btn');
+        const shareBtn = document.getElementById('share-btn');
+        if (undoBtn) undoBtn.addEventListener('click', () => this.undo());
+        if (hintBtn) hintBtn.addEventListener('click', () => this.useHint());
+        if (shareBtn) shareBtn.addEventListener('click', () => this.shareScore());
     }
 
     // ========== ASSET LOADING WITH FALLBACKS ==========
@@ -515,6 +535,17 @@ createLogoFallback(text) {
         
         return canvas;
     }
+
+    update(dt) {
+        if (this.state !== 'playing') return;
+        this.board.update(dt); particleSystem.update(dt);
+        if (this.isBossLevel && this.bossManager.isActive()) {
+            const bossDefeated = this.bossManager.update(dt, this.board);
+            if (bossDefeated) this.onBossDefeated();
+            const boss = this.bossManager.getBoss();
+            if (boss) { const remaining = Math.max(0, boss.attackInterval - boss.attackTimer); ui.showBossTimer(remaining); }
+        }
+        if (this.trauma > 0) this.trauma = Math.max(0, this.trauma - CONFIG.TRAUMA_DECAY);
         this.autoSaveTimer += dt;
         if (this.autoSaveTimer >= CONFIG.AUTO_SAVE_INTERVAL / 1000) { this.saveLevelState(); this.autoSaveTimer = 0; }
         this.totalPlayTime += dt; ui.updateHUD(this.getHUDData());

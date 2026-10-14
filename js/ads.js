@@ -73,7 +73,7 @@ export class AdsManager {
 
     grantReward(rewardType) {
         switch (rewardType) {
-            case 'hint': if (window.game) window.game.showHint(); break;
+            case 'hint': if (window.game) window.game.useHint(); break;
             case 'undo': if (window.game) window.game.addUndo(3); break;
             case 'skip': if (window.game) window.game.skipLevel(); break;
             case 'revive': if (window.game) window.game.reviveBoss(); break;
